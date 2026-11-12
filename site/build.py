@@ -55,7 +55,8 @@ contrat gelé v0.2 · rapports empreintés SHA-256 (IEC 62304)</p>
 {corps}
 </main>
 <footer class="pied">Veille — licence MIT · site généré par <code>site/build.py</code> ·
-<a href="https://github.com/BaptisteFaisy/veille">dépôt GitHub</a></footer>
+<a href="https://github.com/Tradoooo/veille">dépôt GitHub</a> ·
+publié sur <a href="https://tradoooo.github.io/veille/">tradoooo.github.io/veille</a></footer>
 </body>
 </html>
 """
