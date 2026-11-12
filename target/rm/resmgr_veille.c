@@ -1,157 +1,106 @@
-/* Veille — resource manager /dev/veille pour QNX 8.0 (niveau C).
+/* Veille — resource manager /dev/veille : programme principal (QNX 8.0).
  *
- * Squelette documenté : ne compile QUE sur cible QNX (qcc, SDP 8.0) — gardé hors du
- * build hôte par #ifdef __QNX__. La logique de chaîne et la preuve restent dans core/
- * (portable, testé sur hôte) ; ce fichier n'est que la colle QNX.
+ * API vérifiée dans les en-têtes du SDP 8.0 (target/qnx/usr/include/sys/) :
+ *   dispatch.h  : dispatch_create, resmgr_attach (retour int, 8 arg.),
+ *                 pulse_attach, message_connect, dispatch_block/handler
+ *   resmgr.h    : _RESMGR_CONNECT_NFUNCS, _RESMGR_IO_NFUNCS, _RESMGR_NOREPLY
+ *   iofunc.h    : iofunc_func_init, iofunc_attr_init (dattr/info)
+ *   siginfo.h   : SIGEV_PULSE_INIT (sigev_coid/priority/code)
+ *   neutrino.h  : _PULSE_CODE_MINAVAIL=0, _PULSE_CODE_DISCONNECT=-33
  *
- * Ce que QNX apporte ici (voir docs/SAFETY.md §6) :
- *   - resmgr_attach sur /dev/veille (iofunc) : un seul processus possède la chaîne ;
- *     les clients (UI, journal, réseau) y accèdent par API typée (read/write/devctl),
- *     jamais par fichier partagé ni verrou à dimensionner à la main.
- *   - cadence d'acquisition par timer_create + MsgSendPulse : périodicité noyau,
- *     pas de sleep() sujet à la dérive du scheduler.
- *   - voie critique alarme par MsgSend : priority inheritance du noyau — le sink
- *     tourne à la priorité de l'appelant (VEILLE_PRIO_CRITICAL) le temps du message,
- *     donc jamais préempté par du travail best-effort (état prio_inverted du modèle
- *     est corrigé par le noyau, pas seulement détecté).
- *   - mort d'un pair : CHANNEL disconnect notifié par le noyau → alarme technique
- *     dans B_tech (P2), au lieu d'attendre en silence.
- *   - kernel trace : tracelogger capture MsgSend/timers/priorités → preuve empirique
- *     L_measured <= B_proof.
- *
- * Build cible (QNX SDP 8.0 — QEMU x86_64 ou RPi5 aarch64) :
- *   qcc -V gcc_ntoaarch64le -O2 -Wall -Wextra -Icore/include \
- *       target/rm/resmgr_veille.c core/src/*.c -o resmgr_veille
- * Image système : voir image/ (mkifs).
- */
-#ifdef __QNX__
-
+ * Ce que QNX apporte ici (docs/SAFETY.md §6, docs/QNX-BUILD.md) :
+ *   - resmgr_attach /dev/veille : un seul processus possède la chaîne ;
+ *   - cadence timer_create + SIGEV_PULSE : périodicité noyau, pas de sleep() ;
+ *   - voie critique à SCHED_FIFO VEILLE_PRIO_CRITICAL : priority inheritance
+ *     du noyau pour les clients MsgSend (E2 — à valider par kernel trace) ;
+ *   - CHANNEL disconnect : mort d'un pair notifiée → alarme technique (E4). */
+#include <pthread.h>
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/neutrino.h>
-#include <sys/iofunc.h>
-#include <sys/dispatch.h>
 #include <time.h>
-#include <pthread.h>
-#include <sched.h>
 
-#include "veille/chain.h"
-#include "veille/state.h"
-#include "veille/proof.h"
-#include "veille/report.h"
+#include "veille_rm.h"
 
-#define VEILLE_PRIO_CRITICAL  62          /* priorité de la voie critique */
-#define VEILLE_PERIOD_MS      10          /* cadence d'acquisition */
-#define VEILLE_PULSE_TICK     (_PULSE_CODE_MINAVAIL + 1)
-#define VEILLE_MOUNT_POINT    "/dev/veille"
+static veille_dev_t veille_dev;   /* attr doit rester stable (pointée par iofunc) */
 
-/* État du serveur : attributs iofunc + contexte de chaîne. */
-typedef struct {
-    iofunc_attr_t attr;
-    veille_chain_config cfg;
-    long last_bpm;
-} veille_dev_t;
-
-static veille_dev_t veille_dev;
-static dispatch_t *dip;
-static resmgr_context_t *ctp;
-
-/* devctl : commande typée (ex. VEILLE_DEVCTL_PROOF lance la preuve, renvoie le verdict). */
-#define VEILLE_DEVCTL_PROOF   __DIOF(_DCMD_MISC, 1, veille_verdict)
-#define VEILLE_DEVCTL_STATE   __DION(_DCMD_MISC, 2, veille_fault_state)
-
-static int veille_iofunc_devctl(resmgr_context_t *ctp, RESMGR_OCB_T *ocb,
-                                IOFUNC_OCB_T *non_io_ocb) {
-    (void)ocb; (void)non_io_ocb;
-    if (ctp->msg->i.type != _IO_DEVCTL) return ENOSYS;
-    switch (ctp->msg->i.cmd) {
-    case VEILLE_DEVCTL_PROOF: {
-        veille_fault_mask mask = {1, 1, 1, 1, 1};
-        veille_verdict out;
-        size_t n = 0;
-        veille_proof_explore(&veille_dev.cfg, &mask, &out, 1, &n);
-        return RESMGR_NOREPLY;  /* réponse réelle : MsgReply avec le verdict */
-    }
-    default:
-        return ENOSYS;
-    }
+/* Pulse de cadence : un échantillon simulé traverse la chaîne (timer noyau). */
+static int pulse_tick(message_context_t *ctp, int code, unsigned flags, void *handle) {
+    (void)ctp; (void)code; (void)flags;
+    veille_rm_tick((veille_dev_t *)handle);
+    return _RESMGR_NOREPLY;       /* un pulse ne se répond pas */
 }
 
-/* Pulse de cadence : un échantillon traverse la chaîne.
- * Sur pulse TICK → acquire → filter → decide ; si seuil franchi → MsgSend au sink
- * d'alarme (priority inheritance : le sink répond à VEILLE_PRIO_CRITICAL). */
-static void handle_tick_pulse(void) {
-    /* acquire : lecture capteur (driver simulé ou réel via resmgr capteur) */
-    /* filter + decide : logique portable de core/ (veille_alarm_should_fire) */
-    /* alarm : MsgSend(connection_sink, &msg, sizeof(msg), &reply, sizeof(reply));
-     *         la latence de ce MsgSend est bornée par le noyau (priority inheritance)
-     *         et vérifiable dans la trace kernel. */
+/* CHANNEL disconnect : le noyau notifie la mort d'un pair → alarme technique
+ * dans B_tech (P2). Livraison effective à valider sur cible (E4). */
+static int pulse_disconnect(message_context_t *ctp, int code, unsigned flags, void *handle) {
+    (void)ctp; (void)code; (void)flags;
+    veille_rm_peer_lost((veille_dev_t *)handle);
+    return _RESMGR_NOREPLY;
 }
 
-int main(int argc, char **argv) {
-    (void)argc; (void)argv;
+/* Voie critique : le serveur tourne à SCHED_FIFO VEILLE_PRIO_CRITICAL ; les
+ * clients en MsgSend bénéficient de la priority inheritance du noyau (E2). */
+static void setup_priority(void) {
+    struct sched_param sp;
+    memset(&sp, 0, sizeof(sp));
+    sp.sched_priority = VEILLE_PRIO_CRITICAL;
+    (void)pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
+}
 
-    /* 1. Config de chaîne (bornes IEC 60601-1-8 gelées, voir CONTRACT.md §3) */
-    memset(&veille_dev, 0, sizeof(veille_dev));
-    veille_dev.cfg.priority = VEILLE_PRIO_HIGH;
-    veille_dev.cfg.bound_alarm_ms = 200;
-    veille_dev.cfg.bound_ack_ms = 60000;
-    veille_dev.cfg.bound_tech_ms = 50;
-    veille_dev.cfg.tech_detect_ms = 15;
-    veille_dev.cfg.stage_latency_ms[VEILLE_STAGE_ACQUIRE] = 5;
-    veille_dev.cfg.stage_latency_ms[VEILLE_STAGE_FILTER] = 10;
-    veille_dev.cfg.stage_latency_ms[VEILLE_STAGE_DECIDE] = 10;
-    veille_dev.cfg.stage_latency_ms[VEILLE_STAGE_ALARM] = 20;
-    veille_dev.cfg.stage_latency_ms[VEILLE_STAGE_ACK] = 5;
-    veille_dev.last_bpm = 72;
-    iofunc_attr_init(&veille_dev.attr, S_IFNAM | S_IRUSR | S_IWUSR, NULL, NULL);
-
-    /* 2. resmgr_attach : /dev/veille (un seul propriétaire, API typée) */
-    dispatch_t *dispatch = dispatch_create();
-    if (!dispatch) return EXIT_FAILURE;
-    resmgr_attr_t rattr;
-    memset(&rattr, 0, sizeof(rattr));
-    resmgr_connection_t *conn =
-        resmgr_attach(dispatch, &rattr, VEILLE_MOUNT_POINT, _FTYPE_ANY, 0,
-                      NULL, NULL, NULL, &veille_dev.attr);
-    if (!conn) return EXIT_FAILURE;
-    ctp = resmgr_context_alloc(dispatch);
-
-    /* 3. Cadence noyau : timer_create + SIGEV_PULSE (pas de sleep()) */
+/* Cadence noyau : timer_create(CLOCK_MONOTONIC) + SIGEV_PULSE sur le coid du
+ * dispatch, période VEILLE_PERIOD_MS (pas de sleep() sujet à dérive). */
+static int setup_tick_timer(int coid) {
     struct sigevent ev;
-    SIGEV_PULSE_INIT(&ev, ctp->rcvid, VEILLE_PRIO_CRITICAL, VEILLE_PULSE_TICK, 0);
+    SIGEV_PULSE_INIT(&ev, coid, VEILLE_PRIO_CRITICAL, VEILLE_PULSE_TICK, 0);
     timer_t tid;
-    struct _clockperiod period = {0};
-    period.nsec = VEILLE_PERIOD_MS * 1000000L;
+    if (timer_create(CLOCK_MONOTONIC, &ev, &tid) != 0) return -1;
     struct itimerspec it;
     memset(&it, 0, sizeof(it));
     it.it_value.tv_nsec = VEILLE_PERIOD_MS * 1000000L;
     it.it_interval.tv_nsec = VEILLE_PERIOD_MS * 1000000L;
-    if (timer_create(CLOCK_MONOTONIC, &ev, &tid) == 0)
-        timer_settime(tid, 0, &it, NULL);
-    (void)period;
-
-    /* 4. Boucle de réception : pulses (cadence, disconnect) + messages clients */
-    for (;;) {
-        ctp = resmgr_context_block(ctp);
-        if (ctp->msg == NULL) continue;
-        if (ctp->rcvid == 0) {                 /* pulse noyau */
-            struct _pulse pulse;
-            memcpy(&pulse, ctp->msg, sizeof(pulse));
-            if (pulse.code == VEILLE_PULSE_TICK) handle_tick_pulse();
-            /* pulse DISCONNECT (CHANNEL disconnect) : un pair est mort →
-             * alarme technique dans B_tech (P2) — le noyau notifie, on ne devine pas. */
-            continue;
-        }
-        resmgr_handler(ctp, dispatch);          /* read/write/devctl clients */
-    }
-    return EXIT_SUCCESS;
+    return timer_settime(tid, 0, &it, NULL);
 }
 
-#else
-/* Build hôte : ce fichier ne compile que sur QNX. La chaîne est démontrée sur hôte
- * par target/sim/sim.c (latences mesurées) et prouvée par core/ (exploration). */
-#endif /* __QNX__ */
+int main(void) {
+    veille_rm_init(&veille_dev);
+    setup_priority();
+
+    dispatch_t *dpp = dispatch_create();
+    if (!dpp) return EXIT_FAILURE;
+
+    /* handlers iofunc : défauts + read/write de la chaîne (rm_io.c) */
+    resmgr_connect_funcs_t connect_funcs;
+    resmgr_io_funcs_t io_funcs;
+    iofunc_func_init(_RESMGR_CONNECT_NFUNCS, &connect_funcs,
+                     _RESMGR_IO_NFUNCS, &io_funcs);
+    io_funcs.read = veille_io_read;
+    io_funcs.write = veille_io_write;
+
+    resmgr_attr_t rattr;
+    memset(&rattr, 0, sizeof(rattr));
+    if (resmgr_attach(dpp, &rattr, VEILLE_MOUNT_POINT, _FTYPE_ANY, 0,
+                      &connect_funcs, &io_funcs, &veille_dev.attr) < 0)
+        return EXIT_FAILURE;
+
+    if (pulse_attach(dpp, MSG_FLAG_ALLOC_PULSE, VEILLE_PULSE_TICK,
+                     pulse_tick, &veille_dev) < 0)
+        return EXIT_FAILURE;
+    /* disconnect : toléré en échec (notification dépend du canal — E4) */
+    (void)pulse_attach(dpp, MSG_FLAG_ALLOC_PULSE, _PULSE_CODE_DISCONNECT,
+                       pulse_disconnect, &veille_dev);
+
+    int coid = message_connect(dpp, MSG_FLAG_SIDE_CHANNEL);
+    if (coid < 0 || setup_tick_timer(coid) != 0) return EXIT_FAILURE;
+
+    dispatch_context_t *ctp = dispatch_context_alloc(dpp);
+    if (!ctp) return EXIT_FAILURE;
+    for (;;) {
+        ctp = dispatch_block(ctp);
+        if (!ctp) break;
+        dispatch_handler(ctp);
+    }
+    dispatch_context_free(ctp);
+    return EXIT_SUCCESS;
+}
