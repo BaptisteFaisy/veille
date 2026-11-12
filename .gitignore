@@ -42,3 +42,6 @@ qnx-build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Données PhysioNet réelles (lourdes, régénérées par data/fetch.py)
+data/records/
