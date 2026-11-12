@@ -32,6 +32,8 @@ footer.pied{padding:1.2rem;color:var(--mut);font-size:.85rem;border-top:1px soli
 .desc{color:var(--mut);margin:.2rem 0 .6rem}
 .bandeau{background:var(--card);border:1px solid var(--bd);border-left:3px solid var(--acc);
  border-radius:6px;padding:.55rem .8rem;color:var(--mut);font-size:.9rem;margin:1rem 0}
+.btn-rejeu{display:inline-block;margin-left:.5rem;padding:.25rem .7rem;background:var(--acc);
+ color:#12141a;border-radius:6px;font-weight:600;text-decoration:none;font-size:.85rem}
 
 /* Chiffres clés (accueil) : cartes */
 .cartes{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:.7rem;margin:1rem 0}

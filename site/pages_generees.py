@@ -6,6 +6,8 @@ import json
 import re
 from html import escape
 
+from pages_scene import encadre_rejeu
+
 DOSSIERS = ["core", "host", "tests", "scenarios", "target"]
 SUFFIXES = (".c", ".h", ".py", ".json")
 
@@ -186,6 +188,7 @@ def page_preuves(ctx):
     props = "".join(f"<li><b>{esc(n)}</b> — {esc(t)}</li>" for n, t in proprietes(ctx))
     corps = "\n".join([
         "<h1>Preuves</h1>",
+        encadre_rejeu(),
         '<div class="bandeau">Double preuve : <b>modèle</b> (exploration exhaustive '
         "des états de défaillance, C11 pur + jumeau Python, test différentiel) et "
         "<b>empirique</b> (kernel trace sur cible QNX). Rapports texte/JSON/Markdown "
