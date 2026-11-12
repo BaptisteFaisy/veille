@@ -13,10 +13,16 @@ LIENS = {
     "docs/VALIDATION.md": "docs-validation.html",
     "docs/IEC60601-8.md": "docs-iec.html",
     "docs/SOCLE-CI.md": "docs-socle-ci.html",
+    "docs/QNX-BUILD.md": "docs-qnx-build.html",
+    "docs/QNX-EVIDENCE.md": "docs-qnx-evidence.html",
+    "docs/REAL-DATA.md": "docs-real-data.html",
     "LICENSE": "https://github.com/BaptisteFaisy/veille/blob/main/LICENSE",
 }
 
 DOCS = [
+    ("QNX-EVIDENCE.md", "docs-qnx-evidence", "Preuve QNX 8.0"),
+    ("QNX-BUILD.md", "docs-qnx-build", "Recette QNX"),
+    ("REAL-DATA.md", "docs-real-data", "Données réelles"),
     ("SAFETY.md", "docs-safety", "Sûreté"),
     ("GAP.md", "docs-gap", "Écarts"),
     ("DECISIONS.md", "docs-decisions", "Décisions"),
@@ -130,5 +136,7 @@ def construire(ctx):
     pages.append({"slug": "codelab", "nav": "Codelab", "titre": titre_codelab,
                   "corps": codelab})
     for fichier, slug, nav in DOCS:
+        if not ctx.existe("docs", fichier):
+            continue          # document absent (branche partielle) : page ignorée
         pages.append(page_doc(ctx, fichier, slug, nav))
     return pages

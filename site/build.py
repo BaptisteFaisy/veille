@@ -21,6 +21,7 @@ EXTENSIONS = ["tables", "fenced_code", "toc", "sane_lists"]
 # Ordre de la navigation : source unique, les modules produisent dans l'ordre qu'ils veulent.
 ORDRE_NAV = [
     "index", "cahier", "contrat", "codelab", "code", "preuves", "ci",
+    "docs-qnx-evidence", "docs-qnx-build", "docs-real-data",
     "docs-safety", "docs-gap", "docs-decisions", "docs-validation",
     "docs-iec", "docs-socle-ci",
 ]
@@ -74,6 +75,9 @@ def creer_ctx():
     def lire(*chemin):
         return (RACINE.joinpath(*chemin)).read_text(encoding="utf-8")
 
+    def existe(*chemin):
+        return RACINE.joinpath(*chemin).exists()
+
     def fichiers(dossier, suffixes=(".c", ".h", ".py", ".json")):
         return _fichiers_src(dossier, suffixes)
 
@@ -91,6 +95,7 @@ def creer_ctx():
 
     ctx.md = md
     ctx.lire = lire
+    ctx.existe = existe
     ctx.fichiers = fichiers
     ctx.lignes = lignes
     ctx.executer = executer
