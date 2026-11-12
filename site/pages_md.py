@@ -16,10 +16,12 @@ LIENS = {
     "docs/QNX-BUILD.md": "docs-qnx-build.html",
     "docs/QNX-EVIDENCE.md": "docs-qnx-evidence.html",
     "docs/REAL-DATA.md": "docs-real-data.html",
+    "docs/IDEES-CONSOLIDATION.md": "docs-idees.html",
     "LICENSE": "https://github.com/BaptisteFaisy/veille/blob/main/LICENSE",
 }
 
 DOCS = [
+    ("IDEES-CONSOLIDATION.md", "docs-idees", "100 idées"),
     ("QNX-EVIDENCE.md", "docs-qnx-evidence", "Preuve QNX 8.0"),
     ("QNX-BUILD.md", "docs-qnx-build", "Recette QNX"),
     ("REAL-DATA.md", "docs-real-data", "Données réelles"),
