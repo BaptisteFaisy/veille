@@ -26,6 +26,8 @@ gcc --version && python3 --version && make --version
 | 2 | [Construire la chaîne](02-construire-la-chaine.md) | Le contrat gelé ; `core/` C11 pur (ni horloge ni fichier) ; le jumeau Python indépendant ; compiler et tester ; le différentiel C↔Python | 10 min |
 | 3 | [Prouver par exploration exhaustive](03-prouver-par-exploration.md) | Le modèle d'états (4800 états) ; lancer la preuve ; lire un contre-exemple ; les scénarios ; générer le rapport d'audit IEC 62304 | 10 min |
 | 4 | [Porter sur QNX 8.0](04-porter-sur-qnx.md) | Resource manager `/dev/veille` ; cadence par pulses/timers ; priority inheritance `MsgSend` ; kernel trace comme preuve empirique ; adaptive partitioning | 8 min |
+| 5 | [Écrire un resource manager QNX 8.0](05-ecrire-un-resource-manager-qnx.md) | Du pipeline portable à `/dev/veille` ; `dispatch` + `resmgr_attach` ; les **pièges** de `io_write` (le code de retour), de `resmgr_msgget`, des écritures en lot ; `io_read` (offset, EOF, `_RESMGR_NPARTS`) ; horodatage serveur et format du contrat | 12 min |
+| 6 | [Protéger sa chaîne sur QNX 8.0](06-proteger-sa-chaine-qnx.md) | Ce que le noyau garantit et ce qu'il ne garantit pas ; voie critique `SCHED_FIFO` (prio 62) ; priority inheritance **mesuré** sans kernel trace (A vs B) ; dérive réelle du timer ; watchdog « capteur muet » | 12 min |
 
 ## Tout exécuter d'un coup
 
