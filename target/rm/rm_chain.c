@@ -98,7 +98,13 @@ void veille_rm_tick(veille_dev_t *dev) {
 /* CHANNEL disconnect : le noyau notifie la mort d'un pair → alarme technique
  * dans B_tech (P2), au lieu d'attendre en silence. */
 void veille_rm_peer_lost(veille_dev_t *dev) {
-    dev->n_disconnects++;
+    if (dev->n_clients <= 0) {
+        /* Notification sans client connecté : on l'ignore (rien à signaler). */
+        fprintf(stderr, "[veille-rm] notification de disconnect sans client (ignorée)\n");
+        return;
+    }
+    dev->n_clients--;
+    fprintf(stderr, "[veille-rm] mort d'un pair détectée (clients=%d)\n", dev->n_clients);
     veille_verdict v;
     fill_verdict(&v, VEILLE_TECHNICAL_ALARM, "mort d'un pair — CHANNEL disconnect",
                  VEILLE_SENSOR_OK, VEILLE_ALARM_NONE, dev->cfg.bound_tech_ms, 0);

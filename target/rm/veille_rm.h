@@ -41,6 +41,7 @@ typedef struct {
     long                  report_len;       /* octets valides dans report */
     unsigned long         n_samples;        /* échantillons poussés */
     unsigned long         n_disconnects;    /* morts de pairs notifiées */
+    int                   n_clients;        /* clients connectés (connect handler) */
 } veille_dev_t;
 
 /* rm_chain.c — chaîne et verdicts */
@@ -50,6 +51,7 @@ void veille_rm_tick(veille_dev_t *dev);                    /* pulse cadence */
 void veille_rm_peer_lost(veille_dev_t *dev);               /* CHANNEL disconnect */
 
 /* rm_io.c — handlers iofunc */
+int veille_open(resmgr_context_t *ctp, io_open_t *msg, RESMGR_HANDLE_T *handle, void *extra);
 int veille_io_read(resmgr_context_t *ctp, io_read_t *msg, RESMGR_OCB_T *ocb);
 int veille_io_write(resmgr_context_t *ctp, io_write_t *msg, RESMGR_OCB_T *ocb);
 
