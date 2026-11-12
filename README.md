@@ -77,6 +77,17 @@ veille/
 
 Ce dépôt démarre sur le **socle CI self-hosted** (R630) : 3 workers `r630-veille-01..03` (label `veille-worker`), garde **`ci-budget`** (budget CI ≤ 5 min, règle user 2026-10-24), gate **hermes-lite** en dry-run, **Mergify** (file de merge, rebase, labels `urgent`/`priority-low`), **stale-base-guard**. La CI du projet (`build-test`) exige `ci-budget` + `build-test` verts pour entrer dans la file Mergify. Détail : [`docs/SOCLE-CI.md`](docs/SOCLE-CI.md).
 
+## Site
+
+Tout le projet est visible dans un navigateur : **<https://baptistefaisy.github.io/veille/>** — accueil (pitch, chiffres clés calculés depuis le dépôt, état), cahier des charges, contrat gelé, codelab, code source (volumétrie, API C/Python), preuves (sorties de commande réellement exécutées à la génération) et socle CI. Site statique en français, sans dépendance externe, construit et publié par GitHub Pages (`.github/workflows/pages.yml`).
+
+Génération locale :
+
+```
+pip install 'markdown==3.5.2'          # unique dépendance, épinglée
+python3 site/build.py /tmp/veille-site # puis ouvrir /tmp/veille-site/index.html
+```
+
 ## Licence
 
 MIT — voir [LICENSE](LICENSE).

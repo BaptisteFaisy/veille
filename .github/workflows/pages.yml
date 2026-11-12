@@ -1,0 +1,58 @@
+name: Pages
+
+# Site statique : construction + publication GitHub Pages.
+# Ne tourne JAMAIS sur pull_request (déploiement depuis main seulement).
+# Budget CI 5 min (règle user 2026-10-24) : concurrency + cancel-in-progress,
+# fetch-depth: 1, timeout-minutes: 5 sur chaque job.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    # Runner self-hosted R630 : gcc/make présents (site/build.py exécute
+    # réellement `make -s demo` et la preuve pour la page « Preuves »).
+    runs-on: [self-hosted, Linux, X64, veille-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Épinglé : la 3.11.x rend certains markdown différemment et casse
+      # l'anti-dérive (leçon du dépôt sœur qnx-dossier).
+      - name: Dépendance unique (markdown épinglé)
+        run: pip install 'markdown==3.5.2'
+
+      - name: Générer le site statique
+        run: python3 site/build.py _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: [self-hosted, Linux, X64, veille-worker]
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publier sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
