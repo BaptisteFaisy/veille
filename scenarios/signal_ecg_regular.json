@@ -1,0 +1,14 @@
+{
+  "name": "signal_ecg_regular",
+  "description": "Rythme RÉGULIER mais VIVANT : ECG synthétique à 60 bpm parfaitement constant. C'est le cas qui échouait AVANT : deux bpm arrondis égaux déclenchaient une fausse alarme « capteur figé » (fibrillation atriale, MIT-BIH 222). Désormais le capteur est sain et aucune alarme n'est émise (60 bpm < 120).",
+  "kind": "signal",
+  "priority": 0,
+  "bound_alarm_ms": 100,
+  "bound_ack_ms": 60000,
+  "bound_tech_ms": 50,
+  "tech_detect_ms": 15,
+  "stage_latency_ms": [5, 10, 10, 20, 5],
+  "mask": {"sensor": true, "bus": true, "prio": true, "alarm": true, "stage": true},
+  "signal": {"generator": "ecg", "fs_hz": 250, "rate_bpm": 60, "amplitude": 1200, "samples": 1024},
+  "expected": {"rc": 0, "code": "VEILLE_OK", "sensor": "sensor_ok", "bpm": 60, "decision": "ok"}
+}

@@ -1,0 +1,14 @@
+{
+  "name": "signal_ecg_tachycardia",
+  "description": "Tachycardie ventriculaire soutenue : ECG synthétique à 180 bpm CONSTANT. La chaîne au niveau signal mesure la fréquence sur les pics R (seuil adaptatif + réfractaire) et rend une alarme PHYSIOLOGIQUE haute — pas une fausse alarme technique « capteur figé » (le rythme est constant mais le signal, lui, vit).",
+  "kind": "signal",
+  "priority": 0,
+  "bound_alarm_ms": 100,
+  "bound_ack_ms": 60000,
+  "bound_tech_ms": 50,
+  "tech_detect_ms": 15,
+  "stage_latency_ms": [5, 10, 10, 20, 5],
+  "mask": {"sensor": true, "bus": true, "prio": true, "alarm": true, "stage": true},
+  "signal": {"generator": "ecg", "fs_hz": 250, "rate_bpm": 180, "amplitude": 1200, "samples": 1024},
+  "expected": {"rc": 0, "code": "VEILLE_OK", "sensor": "sensor_ok", "bpm": 180, "decision": "alarm_high"}
+}

@@ -1,0 +1,14 @@
+{
+  "name": "signal_flat_60",
+  "description": "Signal PLAT (valeur constante non nulle) nominal 60 bpm : la chaîne au niveau signal détecte un capteur FIGÉ (alarme technique), quelle que soit la fréquence instantanée annoncée. C'est la propriété clé du défaut corrigé : la détection porte sur le signal brut, pas sur le bpm dérivé.",
+  "kind": "signal",
+  "priority": 0,
+  "bound_alarm_ms": 100,
+  "bound_ack_ms": 60000,
+  "bound_tech_ms": 50,
+  "tech_detect_ms": 15,
+  "stage_latency_ms": [5, 10, 10, 20, 5],
+  "mask": {"sensor": true, "bus": true, "prio": true, "alarm": true, "stage": true},
+  "signal": {"generator": "flat", "fs_hz": 250, "rate_bpm": 60, "amplitude": 1200, "samples": 1024},
+  "expected": {"rc": 0, "code": "VEILLE_TECHNICAL_ALARM", "sensor": "sensor_stuck", "bpm": 0, "decision": "tech_fault"}
+}
