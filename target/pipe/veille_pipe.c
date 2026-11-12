@@ -23,6 +23,14 @@ void veille_pipe_state_init(veille_pipe_state *st) {
     if (!st) return;
     memset(st, 0, sizeof(*st));
     st->last_raw = -1;   /* aucune lecture brute encore vue */
+    st->last_bpm = 0;
+    st->sensor = VEILLE_SENSOR_OK;
+    veille_signal_buffer_init(&st->signal, 0);   /* 250 Hz par défaut */
+}
+
+void veille_pipe_set_fs(veille_pipe_state *st, long fs_hz) {
+    if (!st) return;
+    veille_signal_buffer_init(&st->signal, fs_hz);
 }
 
 /* Pousse une valeur dans la fenêtre glissante. */
@@ -68,4 +76,40 @@ int veille_pipe_fault_at(int i) {
     if (i >= 100 && i <= 104) return 1;   /* capteur figé */
     if (i >= 300 && i <= 302) return 2;   /* capteur mort */
     return 0;
+}
+
+/* Traduit un état capteur fautif en résultat de pipeline (alarme technique). */
+static veille_pipe_result tech_result(veille_sensor_state s) {
+    switch (s) {
+        case VEILLE_SENSOR_DEAD:  return VEILLE_PIPE_TECH_DEAD;
+        case VEILLE_SENSOR_STUCK: return VEILLE_PIPE_TECH_STUCK;
+        case VEILLE_SENSOR_NOISY: return VEILLE_PIPE_TECH_NOISY;
+        case VEILLE_SENSOR_DRIFT: return VEILLE_PIPE_TECH_DRIFT;
+        default: return VEILLE_PIPE_OK;
+    }
+}
+
+/* Chemin SIGNAL BRUT : l'état capteur vient des échantillons (pas du bpm),
+ * la fréquence des pics R, puis la décision de seuil sur le bpm filtré. */
+veille_pipe_result veille_pipe_push_sample(veille_pipe_state *st, int16_t brut) {
+    if (!st) return VEILLE_PIPE_OK;
+    veille_signal_push(&st->signal, brut);
+    st->index++;
+    st->sensor = veille_signal_sensor_state(&st->signal);
+    if (st->sensor != VEILLE_SENSOR_OK) return tech_result(st->sensor);
+    long bpm = veille_signal_rate_bpm(&st->signal);
+    if (bpm > 0) {
+        st->last_bpm = bpm;
+        filter_push(&st->filter, bpm);   /* filtre moyenneur glissant sur le bpm */
+    }
+    long filtered = veille_pipe_filtered(st);
+    return (filtered > VEILLE_HR_THRESHOLD) ? VEILLE_PIPE_ALARM : VEILLE_PIPE_OK;
+}
+
+long veille_pipe_rate_bpm(const veille_pipe_state *st) {
+    return st ? st->last_bpm : 0;
+}
+
+veille_sensor_state veille_pipe_sensor_state(const veille_pipe_state *st) {
+    return st ? st->sensor : VEILLE_SENSOR_OK;
 }
