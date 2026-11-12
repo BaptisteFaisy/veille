@@ -132,11 +132,21 @@ def bpm_intervalles(pics, fs, lissage=LISSAGE_DEFAUT):
 
 
 def _ouvrir_sortie(chemin):
-    """Ouvre la destination en écriture (fichier tronqué, périphérique QNX intact)."""
-    if os.path.isfile(chemin):
-        os.truncate(chemin, 0)
-    descripteur = os.open(chemin, os.O_WRONLY | os.O_CREAT, 0o644)
-    return os.fdopen(descripteur, "w", encoding="utf-8")
+    """Ouvre la destination en écriture (fichier tronqué, périphérique QNX intact).
+
+    Sur un périphérique (`/dev/veille`), `O_CREAT`/`O_TRUNC` n'ont pas de sens et
+    le resource manager les refuse (EINVAL) : si le chemin existe déjà, on ouvre
+    en écriture seule.
+    """
+    if os.path.exists(chemin):
+        if os.path.isfile(chemin):
+            os.truncate(chemin, 0)
+        descripteur = os.open(chemin, os.O_WRONLY)
+    else:
+        descripteur = os.open(chemin, os.O_WRONLY | os.O_CREAT, 0o644)
+    # buffering=1 : une ligne = un write() → un échantillon par écriture,
+    # ce qui préserve la cadence réelle et l'horodatage côté serveur.
+    return os.fdopen(descripteur, "w", encoding="utf-8", buffering=1)
 
 
 def ecrire_bpm(chemin, battements, fs=None, temps_reel=False):
