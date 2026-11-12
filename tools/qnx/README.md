@@ -135,3 +135,19 @@ de chaque mesure (`kill $PID` explicite dans le script).
 5. **Le verdict se relit depuis l'offset 0** : après un `read()`, l'offset de
    l'OCB est en fin de rapport ; un `lseek(fd, 0, SEEK_SET)` est nécessaire
    pour relire le verdict courant.
+
+## Trace noyau (E2 par trace)
+
+`capture-trace.sh <label> <prio_client> <duree_s>` (dans l'invité) capture une
+trace `tracelogger` pendant qu'un client SCHED_FIFO `<prio_client>` sature le rm.
+La trace se ramène sur l'hôte et s'analyse avec :
+
+```
+source ~/qnx800/qnxsdp-env.sh          # traceprinter a besoin de QNX_HOST
+python3 tools/qnx/trace-e2.py /tmp/trace-<label>.kev "./veille-rm"
+```
+
+**Attention à la commande** : `traceprinter` exige `-f fichier.kev` ; passé en
+argument positionnel, il ignore le fichier, va lire `/dev/shmem/tracebuffer.kev`
+et échoue avec « internal error code(12) » — ce qui avait fait croire à un
+format de trace incompatible.
