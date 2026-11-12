@@ -1,0 +1,11 @@
+# commande : cd /data/veille-py && time python3 -m veille.cli proof
+# hôte     : Linux 6.14.0-37-generic x86_64 GNU/Linux  2026-11-12T20:37:49+01:00
+# invité   : QNX qnxqemu 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+# ---- sortie ----
+ERROR  VEILLE_PROOF_COUNTEREXAMPLE  bound=100ms  latency=105ms  states=4800
+FAILED 1 error(s)
+
+real	0m0.872s
+user	0m0.341s
+sys	0m0.000s
+# ---- code de sortie : 1 ----

@@ -1,0 +1,16 @@
+# commande : cd '/home/baptiste/tmp/w3-jury' && make demo 2>&1 | tail -12
+# hôte     : Linux 6.14.0-37-generic x86_64 GNU/Linux  2026-11-12T20:38:20+01:00
+# ---- sortie ----
+[302] CAPTEUR MORT  → alarme technique en 0.000 ms (borne 50 ms)
+[309] bpm=124 (filtré) → ALARME haute en 0.000 ms (borne 200 ms)
+[310] bpm=131 (filtré) → ALARME haute en 0.001 ms (borne 200 ms)
+[311] bpm=132 (filtré) → ALARME haute en 0.000 ms (borne 200 ms)
+[408] bpm=131 (filtré) → ALARME haute en 0.000 ms (borne 200 ms)
+[508] bpm=132 (filtré) → ALARME haute en 0.000 ms (borne 200 ms)
+
+--- bilan ---
+alarmes physiologiques : 291 (latence max 0.001 ms, borne prouvée 200 ms)
+alarmes techniques     : 8 (latence max 0.000 ms, borne 50 ms)
+marge de sûreté        : 200 ms (borne prouvée - latence mesurée max)
+[OK] L_measured <= B_proof sur tous les échantillons — double preuve cohérente.
+# ---- code de sortie : 0 ----

@@ -1,0 +1,16 @@
+# scenes.tsv — source unique des plans de la vidéo Veille (2 min 40 s).
+# Séparateur : « ||| »   Champs : durée_s ||| titre ||| narration (sous-titre) ||| source
+# source = « - » pour un plan de texte seul, ou « captures/NOM.txt » pour
+# afficher les lignes utiles d'une capture réelle (les lignes de commentaire
+# « # ... » et les lignes vides sont retirées à l'affichage).
+12 ||| Bienvenue — Veille ||| Un moniteur patient QNX 8.0 dont la latence d'alarme, du capteur à l'alarme, est bornée… et prouvée, pas seulement mesurée. Candidat au QNX Global Hackathon 2026. ||| -
+15 ||| Le problème ||| IEC 60601-1-8 fixe des délais d'alarme ; IEC 62304 exige de les prouver. QNX donne le déterminisme, mais n'outille pas la preuve : le System Profiler mesure des échantillons, il n'explore pas les états de défaillance. ||| -
+13 ||| La méthode ||| Au lieu de quelques scénarios chanceux : l'exploration exhaustive de 4 800 états de défaillance — capteur bloqué ou mort, bus saturé, inversion de priorité, alarmes concurrentes — vérifiés par deux implémentations indépendantes. ||| -
+15 ||| La cible est réelle ||| Ceci n'est pas un schéma : QNX 8.0 tourne dans QEMU (image Quick Start, KVM). La commande uname s'exécute dans l'invité. ||| captures/01-cible-uname.txt
+18 ||| Le bilan sur la cible ||| veille-sim, compilé avec le vrai qcc du SDP 8.0 : 291 alarmes physiologiques, 8 techniques, et la double preuve L_measured ≤ B_proof sur tous les échantillons. ||| captures/02-demo-veille-sim.txt
+18 ||| Exploration sur la cible ||| Les 4 800 états explorés sur QNX lui-même : le contre-exemple attendu, bound=100 ms pour latency=105 ms, est retrouvé — une preuve qui échoue à dessein. ||| captures/03-exploration-4800-etats.txt
+22 ||| Un vrai périphérique : /dev/veille ||| Le resource manager QNX valide les quatre issues de la chaîne : rythme normal, tachycardie, capteur figé, capteur mort. ||| captures/04-resmgr-4-issues.txt
+22 ||| Des ECG de vrais patients ||| L'enregistrement 222 de MIT-BIH est rejoué dans la chaîne, sur la cible : 2 500 pics R détectés, 2 401 battements réels écrits dans /dev/veille. ||| captures/05-rejeu-ecg-mitdb-222.txt
+12 ||| Ce qui n'est pas démontré ||| Trois essais restent ouverts : E2 (priority inheritance par trace noyau), E3 (dérive du timer), E4 (disconnect par canal). Pas de matériel réel, pas de validation clinique. ||| -
+8 ||| Le jumeau de vérification ||| Le socle C11 et le jumeau Python sont deux implémentations séparées du même contrat : le désaccord est un bug, réduit dichotomiquement. ||| captures/07-differentiel-hote-cible.txt
+5 ||| À vous ||| Dépôt, site, codelab, licence MIT. Dossier de preuve : docs/QNX-EVIDENCE.md et preuve/qnx80/. ||| -
