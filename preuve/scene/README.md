@@ -46,14 +46,16 @@ paramètre d'URL `?t=<seconde>&pause=1` :
 
 ```sh
 python3 tools/genere-scene.py                # → site/data-reel.js
-python3 site/build.py /tmp/veille-site       # → 18 pages + assets
+python3 site/build.py /tmp/veille-site       # → 22 pages + assets
 ```
 
 ## Vérifications faites
 
 - `node --check site/scene.js` et `node --check site/data-reel.js` → syntaxe OK.
-- `python3 site/build.py` → 18 pages non vides, sans erreur (les 5 documents
-  absents `LIMITS/SOUBMISSION/VIDEO/TERRAIN/MATRICE` sont ignorés proprement).
+- `python3 site/build.py` → 22 pages non vides, sans erreur. Seul le document
+  `TERRAIN.md` (attendu sur une autre branche) est encore absent : il est
+  ignoré proprement, le build ne casse pas. `LIMITS`, `SOUBMISSION`, `VIDEO`
+  et `MATRICE` sont déjà publiés par le site.
 - Rendu vérifié par CDP : DOM mis à jour (décision = « Alarme haute — seuil
   franchi », verdict `VEILLE_OK`, latence 1 µs ≤ 200 ms) et pixels réellement
   tracés dans les deux canvas (19 059 px ECG, 29 940 px bpm).
