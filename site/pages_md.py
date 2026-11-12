@@ -24,7 +24,7 @@ LIENS = {
     "docs/VIDEO.md": "docs-video.html",
     "docs/TERRAIN.md": "docs-terrain.html",
     "docs/MATRICE.md": "docs-matrice.html",
-    "LICENSE": "https://github.com/BaptisteFaisy/veille/blob/main/LICENSE",
+    "LICENSE": "https://github.com/Tradoooo/veille/blob/main/LICENSE",
 }
 
 DOCS = [

@@ -114,7 +114,7 @@ Le projet n'est pas un prototype « pour Linux » : il **compile et s'exécute s
 
 ## Site
 
-Tout le projet est visible dans un navigateur : **<https://baptistefaisy.github.io/veille/>** — accueil (pitch, chiffres clés calculés depuis le dépôt, état), cahier des charges, contrat gelé, codelab, code source (volumétrie, API C/Python), preuves (sorties de commande réellement exécutées à la génération), **preuve sur cible QNX 8.0**, recette de compilation croisée, données réelles et socle CI. Site statique en français, sans dépendance externe, construit et publié par GitHub Pages (`.github/workflows/pages.yml`).
+Tout le projet est visible dans un navigateur : **<https://tradoooo.github.io/veille/>** — accueil (pitch, chiffres clés calculés depuis le dépôt, état), cahier des charges, contrat gelé, codelab, code source (volumétrie, API C/Python), preuves (sorties de commande réellement exécutées à la génération), **preuve sur cible QNX 8.0**, recette de compilation croisée, données réelles et socle CI. Site statique en français, sans dépendance externe, construit et publié par GitHub Pages (`.github/workflows/pages.yml`).
 
 Génération locale :
 
