@@ -130,6 +130,9 @@ class TestCapteurConstant(unittest.TestCase):
         un autre lot ; on ne fige ici que l'invariant robuste : un signal
         constant est un état de défaillance, pas un capteur sain.
         """
+        hea = chemin("mitdb", "100.hea")
+        if not os.path.exists(hea):
+            self.skipTest(manquant(hea))
         entete = wfdb.lire_en_tete(chemin("mitdb", "100"))
         sign = entete.signal("MLII")
         plat = [sign.physique(sign.baseline)] * 360     # valeur constante
