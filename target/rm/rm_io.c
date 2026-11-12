@@ -54,6 +54,20 @@ static int parse_sample(const char *buf, long *bpm) {
     return 1;
 }
 
+/* Un write peut contenir PLUSIEURS échantillons (un client qui écrit en tampon,
+ * ex. Python, envoie des paquets de lignes). On les parse tous : toute ligne
+ * invalide rejette l'écriture entière (EINVAL), aucune moitié n'est poussée. */
+static int parse_lot(char *buf, long *valeurs, int cap) {
+    int n = 0;
+    for (char *ligne = strtok(buf, "\n"); ligne; ligne = strtok(NULL, "\n")) {
+        if (n >= cap) return -EINVAL;
+        long bpm;
+        if (!parse_sample(ligne, &bpm)) return -EINVAL;
+        valeurs[n++] = bpm;
+    }
+    return n;
+}
+
 int veille_io_write(resmgr_context_t *ctp, io_write_t *msg, RESMGR_OCB_T *ocb) {
     int status = iofunc_write_verify(ctp, msg, ocb, NULL);
     if (status != EOK) return status;
@@ -69,9 +83,12 @@ int veille_io_write(resmgr_context_t *ctp, io_write_t *msg, RESMGR_OCB_T *ocb) {
     if (resmgr_msgget(ctp, buf, nb, sizeof(msg->i)) == -1) return errno;
     buf[nb] = '\0';
 
-    long bpm;
-    if (!parse_sample(buf, &bpm)) return EINVAL;
-    veille_rm_push((veille_dev_t *)ocb->attr, bpm);  /* horodaté côté serveur */
+    long valeurs[VEILLE_BATCH_MAX];
+    int n = parse_lot(buf, valeurs, VEILLE_BATCH_MAX);
+    if (n < 0) return -n;
+
+    veille_dev_t *dev = (veille_dev_t *)ocb->attr;   /* attr = premier membre */
+    for (int i = 0; i < n; i++) veille_rm_push(dev, valeurs[i]);  /* horodaté côté serveur */
 
     ocb->attr->flags |= IOFUNC_ATTR_MTIME | IOFUNC_ATTR_DIRTY_TIME;
     ocb->offset += nb;

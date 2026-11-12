@@ -27,7 +27,8 @@
 #define VEILLE_PERIOD_MS       10       /* cadence d'acquisition (timer noyau) */
 #define VEILLE_PULSE_TICK      (_PULSE_CODE_MINAVAIL + 1)
 #define VEILLE_REPORT_CAP      1024     /* verdict texte au format du CONTRAT */
-#define VEILLE_WRITE_CAP       64       /* taille max d'un échantillon écrit */
+#define VEILLE_WRITE_CAP       4096     /* taille max d'une écriture (octets) */
+#define VEILLE_BATCH_MAX       256      /* échantillons max par écriture */
 #define VEILLE_TICK_CYCLE      600      /* cycle du capteur simulé (ticks) */
 
 /* État du serveur : attribut iofunc EN PREMIER (RESMGR_HANDLE_T = attr). */
