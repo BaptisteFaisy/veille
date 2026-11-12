@@ -36,7 +36,11 @@ Une alarme médicale passe d'« elle a sonné en test » à « **sa latence est 
 | Différentiel C↔Python | ✅ vert (4800 états, latence 105 ms des deux côtés) |
 | Scénarios de référence | ✅ 4 JSON (nominal, sûr, moyen, violation P2) |
 | Simulation hôte portable (`target/sim`) | ✅ `make demo` : 291 alarmes + 8 techniques, double preuve cohérente |
-| Resource manager QNX (`target/rm`) | 🚧 squelette documenté (`#ifdef __QNX__`), à valider sur QEMU (E2–E4) |
+| Resource manager QNX (`target/rm`) | ✅ **exécuté sur cible QNX 8.0** : `/dev/veille` (4 issues de la chaîne validées), 5 défauts trouvés et corrigés — [preuve](docs/QNX-EVIDENCE.md) |
+| Compilation croisée QNX 8.0 | ✅ `make qnx` avec le vrai qcc (SDP 8.0, cible `gcc_ntox86_64`) — [recette](docs/QNX-BUILD.md) |
+| Exécution sur cible QNX 8.0 | ✅ émulateur QEMU (image Quick Start, KVM) : démo C identique à l'hôte, exploration des **4800 états sur cible** (0,13 s), resource manager validé |
+| Données réelles (PhysioNet) | ✅ MIT-BIH (ECG + arythmies), BIDMC (ECG + PLETH/SpO2), slpdb (pression artérielle) — accès libre, ODC-By v1.0, [provenance](docs/REAL-DATA.md) |
+| Rejeu de données réelles dans la chaîne | ✅ ECG de patients réels rejoués **dans l'émulateur QNX** ; 2401 bpm réels écrits dans `/dev/veille` |
 | Codelab (4 chapitres + sommaire) | ✅ `codelab/` — bonus Best Codelab/Tutorial |
 | Docs sûreté | ✅ `SAFETY.md`, `GAP.md`, `DECISIONS.md`, `VALIDATION.md` |
 
@@ -77,9 +81,18 @@ veille/
 
 Ce dépôt démarre sur le **socle CI self-hosted** (R630) : 3 workers `r630-veille-01..03` (label `veille-worker`), garde **`ci-budget`** (budget CI ≤ 5 min, règle user 2026-10-24), gate **hermes-lite** en dry-run, **Mergify** (file de merge, rebase, labels `urgent`/`priority-low`), **stale-base-guard**. La CI du projet (`build-test`) exige `ci-budget` + `build-test` verts pour entrer dans la file Mergify. Détail : [`docs/SOCLE-CI.md`](docs/SOCLE-CI.md).
 
+## Sur cible QNX 8.0
+
+Le projet n'est pas un prototype « pour Linux » : il **compile et s'exécute sur QNX 8.0**.
+
+- **Compilation** : `make qnx` utilise le vrai `qcc` du SDP 8.0 (cible `gcc_ntox86_64`) et produit `veille-sim` et `veille-rm` (ELF QNX x86_64). Recette : [`docs/QNX-BUILD.md`](docs/QNX-BUILD.md).
+- **Exécution** : sur l'image QNX Everywhere Quick Start Target Image (QEMU/KVM), la démo C donne le **même bilan que sur l'hôte** (291 alarmes physiologiques, 8 techniques, `L_measured ≤ B_proof`), l'exploration des **4800 états** s'exécute sur cible (0,13 s), et le resource manager `/dev/veille` valide les quatre issues de la chaîne (normal, tachycardie, capteur figé, capteur mort).
+- **Données réelles** : des ECG de patients réels (PhysioNet) sont rejoués **dans l'émulateur** — 2401 battements réels écrits dans `/dev/veille` par le resource manager QNX.
+- **Honnêteté** : les essais E2 (priority inheritance par kernel trace), E3 (cadence du timer) et E4 (CHANNEL disconnect) sont **déclarés non démontrés**, avec la cause exacte de chacun : [`docs/QNX-EVIDENCE.md`](docs/QNX-EVIDENCE.md). Journaux bruts : [`preuve/qnx80/`](preuve/qnx80/).
+
 ## Site
 
-Tout le projet est visible dans un navigateur : **<https://baptistefaisy.github.io/veille/>** — accueil (pitch, chiffres clés calculés depuis le dépôt, état), cahier des charges, contrat gelé, codelab, code source (volumétrie, API C/Python), preuves (sorties de commande réellement exécutées à la génération) et socle CI. Site statique en français, sans dépendance externe, construit et publié par GitHub Pages (`.github/workflows/pages.yml`).
+Tout le projet est visible dans un navigateur : **<https://baptistefaisy.github.io/veille/>** — accueil (pitch, chiffres clés calculés depuis le dépôt, état), cahier des charges, contrat gelé, codelab, code source (volumétrie, API C/Python), preuves (sorties de commande réellement exécutées à la génération), **preuve sur cible QNX 8.0**, recette de compilation croisée, données réelles et socle CI. Site statique en français, sans dépendance externe, construit et publié par GitHub Pages (`.github/workflows/pages.yml`).
 
 Génération locale :
 
