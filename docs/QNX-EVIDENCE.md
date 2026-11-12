@@ -15,6 +15,10 @@ queue de latence). E3 est **mesuré et défavorable** sur cette cible
 virtualisée : la cadence à 10 ms n'est pas tenue à 100 Hz. E4 est **démontré**
 (alarme technique « capteur muet »). Les latences réelles sous charge sont
 **mesurées** et **tenent** la borne de 200 ms au p99, mais pas au maximum.
+Une **trace noyau de 10 s** a été capturée et décodée pendant qu'un client
+SCHED_FIFO 63 saturait le rm : elle montre le chemin de message passing de la
+voie critique, mais cette image n'expose aucun événement de changement de
+priorité — la trace **ne prouve donc pas** l'héritage (§5.1 bis).
 
 ---
 
@@ -251,6 +255,39 @@ témoin est valide (`prio_after_drop`).
    par ces mesures : au maximum observé, l'attente atteint **90 ms** (essai C,
    sonde sous le hog).
 
+### 5.1 bis — E2 par kernel trace : **la trace est capturée et décodée, mais l'événement de changement de priorité n'est pas exposé**
+
+**Ce qui a été fait.** `tracelogger` (dans l'image QNX 8.0) capture 10 s de
+noyau pendant que le rm tourne avec son tick et qu'un client SCHED_FIFO **63**
+— donc *au-dessus* de la priorité 62 du rm — inonde `/dev/veille`. La trace est
+ramenée sur l'hôte et décodée par le `traceprinter` du SDP. **Commande à
+retenir : `traceprinter -f fichier.kev`** — l'argument positionnel est *ignoré*
+(l'outil va alors lire `/dev/shmem/tracebuffer.kev` et échoue avec « internal
+error code(12) », ce qui avait fait croire à un format de trace incompatible).
+
+Deux captures comparables (10 s chacune) :
+
+| Mesure tirée de la trace noyau | client SCHED_FIFO 63 | client SCHED_FIFO 10 |
+|---|---|---|
+| événements de la classe COMM attachés au pid du rm | **13 865** | 2 991 |
+| états THREAD du rm — THRUNNING | 7 340 | 2 144 |
+| états THREAD du rm — THRECEIVE | 6 081 | 997 |
+| lignes décodées | 1 588 768 | 2 949 255 |
+
+**Ce que la trace montre** : le chemin de message passing de la voie critique
+est bien dans le noyau, et le rm servie par un client plus prioritaire **tourne
+et répond** (6 081 réceptions, 1 040 réponses, 13 865 événements de
+communication rattachés au rm) pendant que ce client la sature.
+
+**Ce que la trace ne montre pas** : cette image n'expose **aucun événement de
+changement de priorité** (classes disponibles : THREAD, KER_CALL, KER_EXIT,
+SYSTEM, COMM, INTERRUPT, CONTROL, PROCESS). La trace **ne prouve donc pas**
+l'héritage de priorité : la preuve reste la mesure comportementale A/B
+ci-dessus (p95 82× plus élevé sans héritage). Journaux :
+`preuve/qnx80/e2-trace-kernel-*.txt`, empreintes des `.kev` dans
+`e2-trace-kernel.sha256`, extrait de 40 lignes de trace dans
+`e2-trace-kernel-extrait.txt`. Outillage : `tools/qnx/trace-e2.py`.
+
 ### 5.2 E3 — cadence du timer : **mesurée, et non tenue à 100 Hz sur cette cible**
 
 **Question.** Le rm cadence l'acquisition avec `timer_create(CLOCK_MONOTONIC)`
@@ -390,7 +427,30 @@ patient (capteur, ECG, réseau, stockage, interface). La latence **acquisition**
 (le tick) n'est pas incluse dans ces chiffres : c'est l'objet du §5.2, et elle
 n'est pas bornée à 200 ms sur cette cible.
 
-## 7. Limites de cette preuve
+## 7. Adaptive partitioning (C5) — **non réalisé, et pourquoi**
+
+L'idée « isolation de la voie critique par partition adaptative » **n'est pas
+mise en œuvre**, pour une raison vérifiable et non contournable :
+
+- L'image **Quick Start Target Image** n'embarque **aucun** support du
+  partitionneur : ni `aps`, ni `aps_client`, et **aucune** entrée de
+  partitionnement dans son buildfile (`grep -i partition /proc/boot/build` ne
+  renvoie rien). Le rm tourne donc dans une partition unique.
+- L'activation exigerait de **reconstruire l'image** avec le partitionneur, ce
+  qui échoue ici : la régénération de l'IFS par `mkqnximage` s'arrête sur les
+  snippets `apk_root` absents de l'archive quickstart (« Non-directory 'bin' has
+  child nodes » puis « Failed to create ifs boot image »), et le SDP du poste
+  ne contient pas les paquets QNX Developer Desktop correspondants. Le serveur
+  R630, où le SDP est complet, serait l'endroit idoine — mais la reconstruction
+  de l'image n'y a pas été tentée dans le temps imparti.
+
+**Ce qui tient lieu d'isolation, et ce qui n'existe pas** : la voie critique
+est isolée par la **priorité** (SCHED_FIFO 62, voir `target/rm/resmgr_veille.c`)
+et l'effet de l'héritage de priorité est mesuré (§5.1) ; l'isolation
+**mémoire** par `secpol`/`abilities` n'est pas non plus en place. C'est un
+manque assumé, pas une preuve.
+
+## 8. Limites de cette preuve
 
 - **Émulateur, pas du matériel** : la cible est un x86_64 virtualisé (KVM). Aucune
   mesure ne vaut pour un vrai moniteur patient ni pour une cible QNX embarquée.
@@ -413,7 +473,7 @@ n'est pas bornée à 200 ms sur cette cible.
   récent que le SDP). E2 repose donc sur l'observation comportementale de la
   priorité, pas sur une trace.
 
-## 8. Ce qui reste non démontré (à l'heure de cette rédaction)
+## 9. Ce qui reste non démontré (à l'heure de cette rédaction)
 
 | Point | État | Pourquoi |
 |---|---|---|
@@ -424,5 +484,6 @@ n'est pas bornée à 200 ms sur cette cible.
 | **E4 — notification de disconnect** | **démontrée mais grossière** | Elle arrive, mais ne distingue pas fermeture normale et mort du client. |
 | **E1 — bornes IEC 60601-1-8** | **partiel** | Ordres de grandeur publics seulement ; la norme payante n'a pas été lue. |
 | **Charge réaliste (capteur + ECG + réseau + stockage)** | **non mesurée** | La charge de preuve est logicielle (un client qui inonde le nœud). |
-| **Trace noyau** | **non exploitable** | `traceprinter` du SDP installé refuse le format de trace de l'image (erreur 12). |
+| **Trace noyau** | **capturée et décodée** | `tracelogger` (10 s, client SCHED_FIFO 63) puis `traceprinter -f` : 1 588 768 lignes décodées, 13 865 événements COMM attachés au rm (§5.1 bis). **Mais** cette image n'expose aucun événement de changement de priorité : la trace ne prouve pas l'héritage (la commande à retenir est `traceprinter -f fichier.kev`, l'argument positionnel est ignoré). |
+| **Adaptive partitioning (C5)** | **non réalisé** | L'image quickstart n'embarque pas le partitionneur ; il faudrait reconstruire l'image avec `mkqnximage` (§7). |
 | **Matériel réel (QNX sur RPi5 / aarch64)** | **non mesuré** | La compilation `gcc_ntoaarch64le` est prévue (`make qnx QCC_V=…`) mais non exécutée sur cible. |

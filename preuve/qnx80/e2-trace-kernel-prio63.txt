@@ -1,0 +1,11 @@
+# trace : e2-prio63.kev (1588768 lignes décodées)
+# processus suivi : ./veille-rm → pid 20877342
+# fenêtre couverte : 39118983369 cycles CPU
+# événements de communication (classe COMM) : 48957 (dont 13865 rattachés au pid suivi)
+# états de thread du processus suivi :
+#   THRUNNING    7340
+#   THRECEIVE    6081
+#   THREADY      2501
+#   THREPLY      1040
+#   THMUON_MUTEX 101
+#   THCREATE     1
