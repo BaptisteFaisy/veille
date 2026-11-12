@@ -21,7 +21,7 @@ Ajouts ultérieurs (campagne « vérité terrain », voir `docs/TERRAIN.md`) :
 | Fichier | Rôle |
 |---|---|
 | `host/veille/terrain.py` | score de détection contre la vérité terrain (sensitivité, VPP, spécificité, matrices de confusion, score d'alarme) |
-| `host/tests/test_terrain.py` | tests du décodage `.atr` et du score de détection |
+| `host/tests/test_terrain.py` | tests du décodage `.atr`, du score de détection, et du cas « rythme régulier ≠ capteur figé » **sur données réelles** |
 | `tools/bench-latences.py` | banc de latence réelle de la chaîne sur l'hôte |
 
 ---
@@ -268,7 +268,11 @@ arrondie) ; `--temps-reel` espace les écritures selon l'intervalle R-R réel.
    pour le même patient.
 3. **Le diagnostic d'état du capteur est heuristique** (fenêtre constante →
    bloqué/mort, pas médian vs amplitude → bruité, dérive de médiane → dérive).
-   Aucun seuil n'est validé cliniquement.
+   Aucun seuil n'est validé cliniquement. La chaîne au niveau signal
+   (`SampleChain`, `signal_sensor_state`) porte désormais ce diagnostic sur
+   les **échantillons bruts** (plat → figé, zéro → mort, variance → bruité) :
+   un ECG réel à rythme régulier n'y est **pas** classé figé, ce que
+   `host/tests/test_terrain.py` vérifie sur le record 100.
 4. **Trois jeux, trois patients différents** (§1.1) : aucune affirmation
    « ECG + SpO2 + PA du même patient » n'est possible avec ces données.
 5. **Formats supportés : 212 et 16 uniquement.** Ni 80/61/24/32 bits, ni

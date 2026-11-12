@@ -17,6 +17,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from veille import wfdb                                   # noqa: E402
+from veille.chain import SampleChain                        # noqa: E402
 from veille.replay import diagnostiquer                   # noqa: E402
 from veille.state import SensorState                       # noqa: E402
 from veille.terrain import scorer_enregistrement           # noqa: E402
@@ -102,21 +103,54 @@ class TestDetectionRecord100(unittest.TestCase):
 class TestCapteurConstant(unittest.TestCase):
     """Un ECG vivant à fréquence cardiaque régulière ne doit pas être « figé ».
 
-    Le brief demande explicitement ce cas (il échouait) : la sémantique
-    « fréquence constante ≠ capteur figé » est en cours de correction dans un
-    autre lot. Ce test vérifie donc le comportement **existant** de
-    :func:`veille.replay.diagnostiquer` (un ECG régulier → OK, jamais STUCK),
-    et un contrôle sur signal plat (une valeur constante → **pas** OK).
+    Le cas que le brief demandait (il échouait) : un enregistrement à
+    fréquence constante ne doit pas être classé « capteur figé ». Deux niveaux
+    sont vérifiés :
+
+    - la **chaîne au niveau signal** (``veille.chain.SampleChain``,
+      ``veille.state.signal_sensor_state``) : c'est l'API corrigée par le lot
+      « détection capteur figé portée au signal brut » ; elle est nourrie ici
+      avec des **échantillons ECG réels** de MIT-BIH, cas que le signal
+      synthétique du lot ne couvre pas ;
+    - le **diagnostic par fenêtre** (``veille.replay.diagnostiquer``), qui reste
+      l'API du rejeu : un ECG régulier ne doit pas y être « figé » non plus.
     """
 
-    def test_rythme_regulier_non_stuck(self):
-        """Un ECG à battements réguliers n'est pas un capteur figé."""
+    def _bruts_reels(self, limite=1800):
+        """Échantillons bruts réels du lead MLII du record 100.
+
+        Retourne ``(signal, bruts, fs)``.
+        """
         dat = chemin("mitdb", "100.dat")
         if not os.path.exists(dat):
             self.skipTest(manquant(dat))
         entete = wfdb.lire_en_tete(chemin("mitdb", "100"))
         sign = entete.signal("MLII")
-        bruts = wfdb.lire_bruts(entete, "MLII", limite=1800)
+        return sign, wfdb.lire_bruts(entete, "MLII", limite=limite), entete.fs
+
+    def test_chaine_signal_rythme_reel_non_fige(self):
+        """Un ECG réel à battements réguliers n'est pas un capteur figé."""
+        sign, bruts, fs = self._bruts_reels()
+        chaine = SampleChain(int(fs))
+        for brut in bruts:
+            chaine.push_sample(brut)
+        self.assertEqual(chaine.sensor_state(), SensorState.OK)
+        # le bpm publié est plausible pour un rythme sinusal normal
+        self.assertGreater(chaine.rate_bpm(), 40)
+        self.assertLess(chaine.rate_bpm(), 120)
+
+    def test_chaine_signal_plat_est_fige(self):
+        """Contrôle : un signal réellement plat est bien « figé » (STUCK)."""
+        sign, _bruts, fs = self._bruts_reels()
+        chaine = SampleChain(int(fs))
+        plat = int(sign.baseline)          # constante, ni nulle ni collée au rail
+        for _ in range(600):
+            chaine.push_sample(plat)
+        self.assertEqual(chaine.sensor_state(), SensorState.STUCK)
+
+    def test_rythme_regulier_non_stuck(self):
+        """Un ECG à battements réguliers n'est pas un capteur figé (rejeu)."""
+        sign, bruts, _fs = self._bruts_reels()
         phys = [sign.physique(v) for v in bruts]
         for i0 in (0, 360, 720, 1080):
             fen = phys[i0:i0 + 360]
@@ -124,12 +158,7 @@ class TestCapteurConstant(unittest.TestCase):
                              SensorState.OK)
 
     def test_signal_plat_non_ok(self):
-        """Contrôle : un signal constant (capteur bloqué) n'est jamais déclaré OK.
-
-        La classification exacte (STUCK vs DEAD) est en cours de révision dans
-        un autre lot ; on ne fige ici que l'invariant robuste : un signal
-        constant est un état de défaillance, pas un capteur sain.
-        """
+        """Contrôle : un signal constant (capteur bloqué) n'est jamais déclaré OK."""
         hea = chemin("mitdb", "100.hea")
         if not os.path.exists(hea):
             self.skipTest(manquant(hea))
