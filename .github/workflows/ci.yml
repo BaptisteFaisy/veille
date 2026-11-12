@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Budget CI 5 min (règle user 2026-10-24) : concurrency + cancel-in-progress,
+# fetch-depth: 1, timeout-minutes: 5. Voir ~/Bureau/CI-BUDGET-5MIN.md.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    # Runners self-hosted R630 (label veille-worker) : gcc/python3/make déjà présents,
+    # pas d'apt-get. Conformité ci-budget vérifiée par .github/ci-budget/check_timeouts.py.
+    runs-on: [self-hosted, Linux, X64, veille-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build core (C11, -Werror)
+        run: make clean && make core
+
+      - name: Lint (taille fichiers < 500 lignes)
+        run: make lint
+
+      - name: Tests C + Python + différentiel C↔Python
+        run: make test
+
+      - name: Exploration exhaustive (4800 états)
+        run: make proof
+
+      - name: Démo hôte (double preuve modèle + mesure)
+        run: make demo
+
+      # ASan/UBSan en dernier (recompile avec sanitizers) ; non bloquant.
+      - name: Sanitizers (ASan/UBSan)
+        run: make sanitize
+        continue-on-error: true

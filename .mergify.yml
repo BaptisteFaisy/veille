@@ -14,6 +14,8 @@ queue_rules:
     queue_conditions:
       # Budget CI 5 min (règle user 2026-10-24) : le garde-fou du socle.
       - check-success = ci-budget
+      # CI réelle du dépôt : build C11 -Werror + tests + différentiel C↔Python + démo.
+      - check-success = build-test
       - -conflict
       - -draft
       - base = main

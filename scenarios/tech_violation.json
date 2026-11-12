@@ -1,0 +1,12 @@
+{
+  "name": "tech_violation",
+  "description": "Borne d'alarme large (P1 tenue) mais détection de panne d'étage à 60 ms > B_tech 50 ms : viole P2 (chaîne rompue sans alarme technique bornée). Contre-exemple P2 attendu.",
+  "priority": 0,
+  "bound_alarm_ms": 1000,
+  "bound_ack_ms": 60000,
+  "bound_tech_ms": 50,
+  "tech_detect_ms": 60,
+  "stage_latency_ms": [5, 10, 10, 20, 5],
+  "mask": {"sensor": true, "bus": true, "prio": true, "alarm": true, "stage": true},
+  "expected": {"rc": 1, "code": "VEILLE_PROOF_COUNTEREXAMPLE"}
+}

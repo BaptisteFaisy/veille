@@ -1,0 +1,27 @@
+{
+  "name": "medium",
+  "description": "Priorité moyenne IEC 60601-1-8, borne 500 ms, étages plus lents (base 100 ms, pire cas 215 ms). Preuve complète attendue.",
+  "priority": 1,
+  "bound_alarm_ms": 500,
+  "bound_ack_ms": 120000,
+  "stage_latency_ms": [
+    10,
+    20,
+    20,
+    40,
+    10
+  ],
+  "mask": {
+    "sensor": true,
+    "bus": true,
+    "prio": true,
+    "alarm": true,
+    "stage": true
+  },
+  "expected": {
+    "rc": 0,
+    "code": "VEILLE_PROOF_COMPLETE"
+  },
+  "bound_tech_ms": 50,
+  "tech_detect_ms": 15
+}

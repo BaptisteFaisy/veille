@@ -1,0 +1,43 @@
+# C
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+*.d
+*.gcda
+*.gcno
+*.gcov
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Build
+build/
+dist/
+*.log
+
+# QNX
+*.ifs
+*.raw
+*.img
+nto/
+qnx-build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

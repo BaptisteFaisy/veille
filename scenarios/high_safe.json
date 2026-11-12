@@ -1,0 +1,27 @@
+{
+  "name": "high_safe",
+  "description": "Priorité haute, borne 200 ms : le pire cas absolu (165 ms) tient dans la borne sur les 300 états. Preuve complète attendue.",
+  "priority": 0,
+  "bound_alarm_ms": 200,
+  "bound_ack_ms": 60000,
+  "stage_latency_ms": [
+    5,
+    10,
+    10,
+    20,
+    5
+  ],
+  "mask": {
+    "sensor": true,
+    "bus": true,
+    "prio": true,
+    "alarm": true,
+    "stage": true
+  },
+  "expected": {
+    "rc": 0,
+    "code": "VEILLE_PROOF_COMPLETE"
+  },
+  "bound_tech_ms": 50,
+  "tech_detect_ms": 15
+}

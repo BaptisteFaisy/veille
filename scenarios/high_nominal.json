@@ -1,0 +1,27 @@
+{
+  "name": "high_nominal",
+  "description": "Priorité haute IEC 60601-1-8, borne 100 ms. Le pire cas (capteur bruité + pic de bus + inversion de priorité + alarmes concurrentes = 165 ms) dépasse la borne : contre-exemple attendu. Sert à démontrer la détection.",
+  "priority": 0,
+  "bound_alarm_ms": 100,
+  "bound_ack_ms": 60000,
+  "stage_latency_ms": [
+    5,
+    10,
+    10,
+    20,
+    5
+  ],
+  "mask": {
+    "sensor": true,
+    "bus": true,
+    "prio": true,
+    "alarm": true,
+    "stage": true
+  },
+  "expected": {
+    "rc": 1,
+    "code": "VEILLE_PROOF_COUNTEREXAMPLE"
+  },
+  "bound_tech_ms": 50,
+  "tech_detect_ms": 15
+}
