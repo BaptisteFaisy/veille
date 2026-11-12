@@ -377,3 +377,123 @@ def sha256_fichier(chemin):
         for bloc in iter(lambda: f.read(1 << 20), b""):
             h.update(bloc)
     return h.hexdigest()
+
+
+# --- Annotations WFDB (vérité terrain) -------------------------------------
+# Format « MIT » (binaire), WFDB Applications Guide annot(5) : chaque
+# annotation tient sur un mot 16 bits (petit boutisme). Les 6 bits forts
+# codent le type A, les 10 bits restants l'intervalle I en échantillons depuis
+# l'annotation précédente (A = I = 0 : fin de fichier). Pseudo-annotations
+# SKIP(59)/NUM(60)/SUB(61)/CHN(62)/AUX(63). Décodage croisé avec l'implémen-
+# tation de référence WFDB et validé sur le MIT-BIH Database Directory.
+CODE_NORMAL = 1      # battement normal
+CODE_PVC = 5         # extrasystole ventriculaire
+CODE_FUSION = 6      # fusion ventriculo-normale
+CODE_APC = 8         # extrasystole atriale
+CODE_UNKNOWN = 13    # battement non classable
+CODE_RHYTHM = 28     # changement de rythme
+
+# Codes de battement (complexes QRS) : table isqrs() de la WFDB library.
+CODES_BATTEMENT = frozenset((
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+    25, 30, 31, 34, 35, 38, 41,
+))
+
+# Mnémonique par code (table cstring[] de la WFDB library, écrite par ecgstr).
+MNEMONIQUE = [
+    " ", "N", "L", "R", "a", "V", "F", "J", "A", "S",
+    "E", "j", "/", "Q", "~", "[15]", "|", "[17]", "s", "T",
+    "*", "D", '"', "=", "p", "B", "^", "t", "+", "u",
+    "?", "!", "[", "]", "e", "n", "@", "x", "f", "(",
+    ")", "r", "[42]", "[43]", "[44]", "[45]", "[46]", "[47]", "[48]", "[49]",
+]
+
+
+class Annotation:
+    """Une annotation de vérité terrain WFDB (temps + type + attributs)."""
+
+    __slots__ = ("temps", "code", "sous_type", "canal", "num", "aux")
+
+    def __init__(self, temps, code, sous_type=0, canal=0, num=0, aux=""):
+        self.temps, self.code = temps, code
+        self.sous_type, self.canal = sous_type, canal
+        self.num, self.aux = num, aux
+
+    def mnemonic(self):
+        """Mnémonique lisible du type (``N``, ``V``, ``A``, ``F``, ``Q``…)."""
+        if 0 <= self.code < len(MNEMONIQUE):
+            return MNEMONIQUE[self.code]
+        return "[%d]" % self.code
+
+    def est_battement(self):
+        """Vrai si l'annotation marque un complexe QRS (un battement)."""
+        return self.code in CODES_BATTEMENT
+
+    def __repr__(self):
+        return "<Annotation t=%d %s>" % (self.temps, self.mnemonic())
+
+
+def _decoder_mit_annotations(donnees):
+    """Décode un .atr au format MIT → liste de tuples d'annotations bruts.
+
+    Retourne ``(temps, code, sous_type, canal, num, aux)`` par annotation.
+    """
+    resultat = []
+    n = len(donnees)
+    pos = temps = 0
+
+    def g16():
+        nonlocal pos
+        v = donnees[pos] | (donnees[pos + 1] << 8)
+        pos += 2
+        return v
+
+    def g32():
+        haut = g16()
+        bas = g16()
+        return (haut << 16) | (bas & 0xFFFF)
+
+    while pos + 1 < n:
+        mot = g16()
+        code = (mot >> 10) & 0x3F
+        intervalle = mot & 0x3FF
+        if code == 0 and intervalle == 0:
+            break
+        temps += intervalle
+        sous_type = canal = num = 0
+        aux = ""
+        while pos + 1 < n:
+            mot2 = donnees[pos] | (donnees[pos + 1] << 8)
+            code2 = (mot2 >> 10) & 0x3F
+            if code2 < 59:
+                break
+            g16()
+            i2 = mot2 & 0x3FF
+            if code2 == 59:            # SKIP : intervalle long (g32)
+                temps += g32()
+            elif code2 == 61:          # SUB : sous-type
+                sous_type = i2
+            elif code2 == 62:          # CHN : canal
+                canal = i2
+            elif code2 == 60:          # NUM : numéro
+                num = i2
+            elif code2 == 63:          # AUX : données auxiliaires
+                longueur = i2 & 0xFF
+                fin = pos + longueur
+                aux = donnees[pos:fin].decode("latin1", errors="replace")
+                pos = fin + (longueur & 1)
+        resultat.append((temps, code, sous_type, canal, num, aux))
+    return resultat
+
+
+def lire_annotations(chemin):
+    """Lit les annotations d'un enregistrement (fichier .atr).
+
+    ``chemin`` accepte un chemin avec ou sans l'extension ``.atr``. Retourne
+    la liste des :class:`Annotation` triées par temps croissant.
+    """
+    chemin_atr = chemin[:-4] + ".atr" if chemin.endswith(".atr") else chemin + ".atr"
+    with open(chemin_atr, "rb") as f:
+        donnees = f.read()
+    return [Annotation(t, c, s, ch, m, a)
+            for t, c, s, ch, m, a in _decoder_mit_annotations(donnees)]

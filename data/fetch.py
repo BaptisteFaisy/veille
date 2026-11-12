@@ -60,6 +60,12 @@ SELECTION = {
 
 _last_request_ts = 0.0    # horodatage du dernier départ de requête (politesses)
 
+# Les 48 enregistrements de la base MIT-BIH (liste publiée dans RECORDS).
+MITDB_COMPLET = ("100 101 102 103 104 105 106 107 108 109 111 112 113 114 115 "
+                 "116 117 118 119 121 122 123 124 200 201 202 203 205 207 208 "
+                 "209 210 212 213 214 215 217 219 220 221 222 223 228 230 231 "
+                 "232 233 234").split()
+
 
 def sha256_file(path):
     """Empreinte SHA-256 hexadécimale d'un fichier local, par blocs de 1 Mo."""
@@ -205,6 +211,56 @@ def fetch_db(db, dest_root, journal):
     return not echecs, echecs
 
 
+def fetch_mitdb_complet(dest_root, journal):
+    """Télécharge les 48 enregistrements MIT-BIH (signal + vérité terrain .atr).
+
+    Mêmes conventions que :func:`fetch_db` : cache (jamais de re-téléchargement
+    d'un fichier déjà présent et vérifié), empreinte SHA-256 contrôlée contre
+    le ``SHA256SUMS.txt`` publié, ≥ 2 s entre deux requêtes, journal horodaté.
+
+    Retourne ``(nb_telecharges, echecs)`` : ``nb_telecharges`` ne compte que
+    les fichiers réellement téléchargés (les fichiers déjà en cache ne sont
+    pas re-téléchargés et ne sont pas comptés).
+    """
+    rep_db = os.path.join(dest_root, "mitdb")
+    url_base = "%s/mitdb/1.0.0" % BASE_URL
+    os.makedirs(rep_db, exist_ok=True)
+    journal.log("INFO", "MIT-BIH complet (48 enregistrements) → %s" % rep_db)
+    sha_local = os.path.join(rep_db, "SHA256SUMS.txt")
+    if not os.path.exists(sha_local):
+        if not polite_get(url_base + "/SHA256SUMS.txt", sha_local, journal):
+            journal.log("ERROR", "SHA256SUMS.txt introuvable pour mitdb")
+            return 0, ["mitdb/SHA256SUMS.txt"]
+    sha_map = load_sha_map(sha_local)
+    telecharges, echecs = 0, []
+    for nom in MITDB_COMPLET:
+        for rel in ("%s.hea" % nom, "%s.dat" % nom, "%s.atr" % nom):
+            dest = os.path.join(rep_db, rel)
+            attendu = sha_map.get(rel)
+            if os.path.exists(dest) and attendu and sha256_file(dest) == attendu:
+                journal.log("CACHE", "%s déjà présent et vérifié" % rel)
+                continue
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            if not polite_get("%s/%s" % (url_base, rel), dest, journal):
+                journal.log("ERROR", "%s : téléchargement impossible" % rel)
+                echecs.append("mitdb/" + rel)
+                continue
+            if attendu is None:
+                journal.log("WARN", "%s téléchargé mais sans empreinte publiée" % rel)
+                telecharges += 1
+                continue
+            obtenu = sha256_file(dest)
+            if obtenu != attendu:
+                journal.log("ERROR", "%s : SHA-256 invalide %s ≠ %s"
+                            % (rel, obtenu, attendu))
+                os.remove(dest)
+                echecs.append("mitdb/" + rel)
+                continue
+            telecharges += 1
+            journal.log("OK", "%s téléchargé et vérifié (%s)" % (rel, obtenu[:16]))
+    return telecharges, echecs
+
+
 def main(argv=None):
     racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     p = argparse.ArgumentParser(description="Télécharge la sélection Veille depuis PhysioNet.")
@@ -212,12 +268,18 @@ def main(argv=None):
                    help="répertoire de destination (défaut : data/records)")
     p.add_argument("--db", choices=sorted(k.split("/")[0] for k in SELECTION),
                    help="ne télécharger qu'un jeu")
+    p.add_argument("--mitdb-complet", action="store_true",
+                   help="télécharger les 48 enregistrements MIT-BIH (signal + .atr)")
     args = p.parse_args(argv)
 
     journal = Journal(os.path.join(args.dest, "fetch.log"))
     journal.log("INFO", "destination : %s" % args.dest)
     os.makedirs(args.dest, exist_ok=True)
     tous_echecs = []
+    if args.mitdb_complet:
+        nb, echecs = fetch_mitdb_complet(args.dest, journal)
+        journal.log("OK", "MIT-BIH : %d fichier(s) téléchargé(s)" % nb)
+        tous_echecs += echecs
     for db in SELECTION:
         if args.db and db.split("/")[0] != args.db:
             continue

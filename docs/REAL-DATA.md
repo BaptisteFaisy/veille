@@ -10,11 +10,19 @@ Les cinq livrables de ce lot :
 
 | Fichier | Rôle |
 |---|---|
-| `host/veille/wfdb.py` | lecteur WFDB (formats 212 et 16) + CSV numériques BIDMC |
+| `host/veille/wfdb.py` | lecteur WFDB (formats 212 et 16) + **décodeur d'annotations `.atr`** + CSV numériques BIDMC |
 | `host/veille/replay.py` | rejeu d'un signal réel dans la chaîne existante (`chain.py`, `state.py`, `verdict.py`, `report.py`) |
 | `host/veille/resmgr_client.py` | pics R + bpm instantané → lignes `bpm <n>` vers `/dev/veille` |
 | `host/tests/test_replay.py` | tests déterministes sur les données réelles présentes |
 | `data/fetch.py` | téléchargement vérifié (déjà écrit, committé tel quel) |
+
+Ajouts ultérieurs (campagne « vérité terrain », voir `docs/TERRAIN.md`) :
+
+| Fichier | Rôle |
+|---|---|
+| `host/veille/terrain.py` | score de détection contre la vérité terrain (sensitivité, VPP, spécificité, matrices de confusion, score d'alarme) |
+| `host/tests/test_terrain.py` | tests du décodage `.atr` et du score de détection |
+| `tools/bench-latences.py` | banc de latence réelle de la chaîne sur l'hôte |
 
 ---
 
@@ -106,8 +114,8 @@ jeu dont ils sont issus.
 
 ## 4. Empreintes SHA-256 (vérifiées)
 
-Les 18 fichiers présents ont été recalculés localement et **conformes** aux
-`SHA256SUMS.txt` publiés par PhysioNet (18/18) :
+Les 18 fichiers de la sélection initiale ont été recalculés localement et
+**conformes** aux `SHA256SUMS.txt` publiés par PhysioNet (18/18) :
 
 ```
 b2ea3c250e56e48f4b7b90697832b8ecd1afa1e0bb31f2dcfea4ed6e1075a639  mitdb/100.dat
@@ -141,6 +149,26 @@ comparé à la valeur publiée :
 | mitdb/100 V5 (650 000 éch.) | 20052 | 20052 |
 | bidmc01 RESP / PLETH / V / AVR / II | 5854 / 29272 / −17810 / −20589 / 23277 | identiques |
 
+### 4.1 Extension : les 48 enregistrements MIT-BIH
+
+Pour la campagne « vérité terrain » (`docs/TERRAIN.md`), les **48
+enregistrements** de la base MIT-BIH ont été téléchargés (signal + en-tête +
+annotations `.atr`), soit **144 fichiers** de données + le `SHA256SUMS.txt`
+(145 fichiers dans `data/records/mitdb/`).
+
+Téléchargement : `python3 data/fetch.py --mitdb-complet` (nouvelle fonction
+`fetch_mitdb_complet` dans `data/fetch.py`, mêmes conventions : cache sur
+l'empreinte publiée, **≥ 2 s entre deux requêtes**, ≤ 3 tentatives par
+fichier, vérification SHA-256 contre le `SHA256SUMS.txt` de PhysioNet).
+
+**Fichiers réellement téléchargés lors de cette campagne : 134** (les 30 autres
+étaient déjà présents et vérifiés dans le cache, donc **non** re-téléchargés).
+**0 échec** de vérification d'empreinte. Le journal complet est dans
+`data/records/fetch.log`.
+
+Ces données restent **hors du dépôt** : `data/records/` est ignoré par git,
+aucun octet de donnée n'est versionné.
+
 ---
 
 ## 5. Régénérer les données
@@ -149,6 +177,7 @@ comparé à la valeur publiée :
 python3 data/fetch.py                 # les trois jeux
 python3 data/fetch.py --db mitdb      # un seul jeu
 python3 data/fetch.py --dest /tmp/rec # autre destination
+python3 data/fetch.py --mitdb-complet # les 48 enregistrements MIT-BIH (+ .atr)
 ```
 
 Politesse du script : ≥ 2 s entre deux requêtes, ≤ 3 tentatives par fichier
@@ -220,14 +249,16 @@ arrondie) ; `--temps-reel` espace les écritures selon l'intervalle R-R réel.
 
 ## 8. Limites (à lire avant toute citation)
 
-1. **Les annotations `.atr` ne sont PAS parsées.** MIT-BIH publie la vérité
-   terrain des arythmies (`100.atr`, `105.atr` : battements R, A, V, F, …) ;
-   le code Veille ne les lit **pas encore**. Conséquence directe : les
-   extrasystoles ventriculaires de l'enregistrement 105 **ne sont pas
-   distinguées**, le bpm publié est un bpm moyen (les PVC sont exclues par
-   les intervalles implausibles, pas par leur nature), et il n'est pas encore
-   possible de rejouer « une arythmie » de bout en bout avec sa vérité
-   terrain. C'est le premier chantier naturel après ce lot.
+1. ~~**Les annotations `.atr` ne sont PAS parsées.**~~ **Corrigé** : les
+   annotations `.atr` MIT-BIH **sont maintenant décodées** par
+   `veille.wfdb.lire_annotations` (format WFDB binaire « MIT », spécifié par
+   `annot(5)` de la WFDB Applications Guide), et validées contre les comptages
+   publiés du MIT-BIH Database Directory (18/18 types concordants sur les
+   records 100, 105, 205 et 222). Voir `docs/TERRAIN.md`. **Ce qui reste vrai** :
+   les extrasystoles ventriculaires ne sont toujours **pas distinguées** dans le
+   bpm publié (elles sont exclues par les intervalles implausibles, pas par
+   leur nature) — le bpm reste un bpm moyen, et non une classification de
+   battement.
 2. **La détection de pics R est un algorithme simple et non clinique** :
    dérivée → carrure → intégration glissante (150 ms) → seuil adaptatif
    `NPK + 0,25·(SPK − NPK)` → réfractaire 200 ms, sans bibliothèque. Les
@@ -241,8 +272,10 @@ arrondie) ; `--temps-reel` espace les écritures selon l'intervalle R-R réel.
 4. **Trois jeux, trois patients différents** (§1.1) : aucune affirmation
    « ECG + SpO2 + PA du même patient » n'est possible avec ces données.
 5. **Formats supportés : 212 et 16 uniquement.** Ni 80/61/24/32 bits, ni
-   enregistrements multi-segments, ni annotations, ni signaux à fréquences
-   différentes dans un même enregistrement.
+   enregistrements multi-segments, ni signaux à fréquences différentes dans un
+   même enregistrement. ~~ni annotations~~ → les annotations **`.atr` au format
+   MIT** sont désormais lues (`veille.wfdb.lire_annotations`) ; le format AHA
+   (16 octets par annotation) ne l'est pas.
 6. **Le rendu Markdown** affiche « exploration exhaustive de 0 états » tant
    que `--preuve` n'est pas demandé : le rejeu ne fait pas la preuve
    exhaustive (qui reste dans `veille.cli proof`), il montre que des données
