@@ -1,0 +1,8 @@
+# commande : cd /data/w5 && ./bench_client verdict
+# hôte     : Linux 6.14.0-37-generic x86_64 GNU/Linux  2026-11-12T21:46:45+01:00
+# invité   : QNX qnxqemu 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+# ---- sortie ----
+Warning: Permanently added '[127.0.0.1]:8022' (ED25519) to the list of known hosts.
+WARN   VEILLE_TECHNICAL_ALARM  chain=/dev/veille  stage=acquire  state=sensor_dead|bus_ok|prio_normal|alarm_none  bound=50  latency=15
+OK
+# ---- code de sortie : 0 ----

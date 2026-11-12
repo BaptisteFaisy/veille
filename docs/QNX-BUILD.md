@@ -1,9 +1,10 @@
 # Build QNX 8.0 — recette reproductible (`make qnx`)
 
 Statut : **compilation croisée vérifiée sur l'hôte** (binaires ELF QNX/x86-64
-produits). **Rien n'a encore tourné sur cible** : l'exécution dans l'émulateur
-QNX (QEMU) est une étape distincte et pilotée séparément. Aucun résultat E2/E3/E4
-du cahier des charges n'est revendiqué comme testé ici (voir §5).
+produits) **et le resource manager vérifié en exécution sur cible QNX 8.0**
+(émulateur QEMU/KVM). Ce document décrit le **build** ; les résultats de
+mesure (E2/E3/E4, latences) sont dans [`QNX-EVIDENCE.md`](QNX-EVIDENCE.md) et
+les journaux dans [`preuve/qnx80/`](../preuve/qnx80/) — voir §5.
 
 ## 1. SDP utilisé
 
@@ -98,30 +99,59 @@ build/qnx/veille-sim: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), d
 build/qnx/veille-rm:  ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /usr/lib/ldqnx-64.so.2, BuildID[md5/uuid]=c5e1412f3e59c9c08a1ea31128dcde7b, with debug_info, not stripped
 ```
 
-## 5. Ce qui reste À VALIDER SUR CIBLE (honnêteté stricte)
+## 5. Ce qui a été validé SUR CIBLE (et ce qui reste à valider)
 
-Rien de ce qui suit n'a tourné dans l'émulateur ; ce ne sont que des intentions
-câblées dans le code, à démontrer sur cible (cahier des charges E2/E3/E4) :
+Le resource manager **tourne** sur QNX 8.0 (émulateur QEMU/KVM) et a été
+instrumenté pour la campagne de mesures : **E2, E3 et E4 sont mesurés** —
+voir [`QNX-EVIDENCE.md`](QNX-EVIDENCE.md) §5 et §6, et les journaux dans
+[`preuve/qnx80/`](../preuve/qnx80/). Ce document ne décrit que le **build**.
 
-- **E2 — priority inheritance observable par kernel trace** : `veille-rm` place
-  son fil en `SCHED_FIFO 62` (`setup_priority()`), censé propager la priorité
-  aux clients `MsgSend` ; à vérifier avec `tracelogger`/kernel trace que le sink
-  tourne bien à la priorité de l'appelant pendant le message, et que
-  `L_measured <= B_proof` sur la trace.
-- **E3 — cadence `timer_create` + pulse** : le tick 10 ms par
-  `timer_create(CLOCK_MONOTONIC)` + `SIGEV_PULSE_INIT` → `pulse_attach` est
-  compilé mais **non exécuté** ; la dérive de cadence et la latence
-  pulse→traitement restent à mesurer sur cible. (Le cahier évoque
-  `MsgSendPulse` : ici le pulse de timer passe par le coid du dispatch —
-  équivalent noyau, à instrumenter.)
-- **E4 — CHANNEL disconnect** : `pulse_attach(_PULSE_CODE_DISCONNECT)` est
-  enregistré (échec toléré à l'attach), et `veille_rm_peer_lost()` émet l'alarme
-  technique ; la **livraison effective** du pulse de disconnect par procnto sur
-  le canal du dispatch n'est pas prouvée tant que le resmgr n'a pas tourné.
-- Le protocole `write("bpm N")` / `read()` → verdict texte n'a jamais été
-  exercé par un vrai client `open("/dev/veille")`.
-- `veille-sim` QNX n'a pas été exécuté (double preuve mesurée sur cible : à
-  faire dans l'émulateur).
+- **E2 — héritage de priorité** : mesuré par le comportement (le rm lit sa
+  priorité effective à la réception des messages). Le mécanisme est observé ;
+  l'effet est quantifié mais **conditionnel** (queue de latence). Deux
+  enseignements de cible : QNX 8.0 **aligne la priorité du receveur sur
+  celle de l'émetteur** pendant le `MsgSend` (un client de faible priorité
+  dépriorise donc le rm), et l'annulation explicite du boost est lisible
+  (`pthread_setschedparam` + relecture).
+- **E3 — cadence `timer_create` + pulse** : mesurée (ticks servis, écart max à
+  la période en µs et en ppm, ticks regroupés, latence tick→verdict). Sur
+  cette cible virtualisée la cadence 10 ms **n'est pas tenue** (92–98 Hz,
+  écart max 69–103 ms) — et une sonde indépendante sur canal dédié montre le
+  même ordre de grandeur, donc ce n'est pas le rm qui perd les pulses.
+- **E4 — silence du capteur** : le rm arme un **watchdog** (timer noyau
+  indépendant, 100 ms) qui émet une alarme technique « capteur muet » dans
+  `B_tech` quand aucun échantillon n'arrive depuis plus de `--watchdog-ms`
+  (défaut 1 000). La notification `_PULSE_CODE_DISCONNECT` **arrive** elle
+  aussi (interception dans la boucle du dispatch) mais ne distingue pas une
+  fermeture normale d'une mort du client.
+
+### 5.1 Options du resource manager (ajoutées pour la preuve)
+
+```text
+./veille-rm [--prio N] [--watchdog-ms N] [--no-tick] [--no-inherit]
+```
+
+| Option | Effet | Usage |
+|---|---|---|
+| `--prio N` | priorité SCHED_FIFO de base du rm (défaut 62) | E2 : faire varier la base |
+| `--watchdog-ms N` | seuil de silence « capteur muet » (défaut 1 000 ; `0` désactive) | E4 |
+| `--no-tick` | coupe le capteur simulé interne (chaîne pilotée par les seuls clients) | E4 |
+| `--no-inherit` | annule explicitement l'héritage de priorité reçu du noyau | E2 (contrôle négatif) |
+
+### 5.2 Deux pièges d'API QNX 8.0 appris sur cible (à ne pas rejouer)
+
+1. **`MSG_FLAG_ALLOC_PULSE` désynchronise le timer et le handler.**
+   `pulse_attach(dpp, MSG_FLAG_ALLOC_PULSE, code, …)` **ignore** le code
+   demandé et en fait allouer un autre par le dispatch ; le timer envoie
+   pourtant au code écrit dans `SIGEV_PULSE_INIT`. Résultat : le tick n'est
+   **jamais** servi, silencieusement. Il faut
+   `pulse_attach(dpp, 0, code, …)` (code fixe dans `[0,127]`).
+2. **Le canal latéral n'est pas servi par `dispatch_block()`.** Le coid du
+   timer doit provenir de `message_connect(dpp, 0)` (canal principal) et non
+   de `message_connect(dpp, MSG_FLAG_SIDE_CHANNEL)`.
+
+Les deux ont été isolés avec un programme minimal (`tick_probe`, voir
+`tools/qnx/README.md`) avant toute correction.
 
 ## 6. Différences d'API QNX 8.0 vs le squelette (vérifiées dans les en-têtes)
 
@@ -162,4 +192,15 @@ accessible côté modèle (`make proof`) et embarquée dans `veille-sim`.
 echo "bpm 132" > /dev/veille    # pousse un échantillon horodaté côté serveur
 cat /dev/veille                 # verdict courant au format texte du CONTRAT
 ```
+
+Sur l'invité QNX, le banc complet (mesures E2/E3/E4 + latences) se joue avec :
+
+```sh
+bash tools/qnx/boot.sh --start        # VM QNX 8.0 (QEMU/KVM), SSH port 8022
+bash tools/qnx/build.sh               # compilation croisée (qcc) + outils de mesure
+bash tools/qnx/run-bench.sh all       # campagne → preuve/qnx80/
+python3 tools/qnx/analyse.py preuve/qnx80
+```
+
+Voir `tools/qnx/README.md` (prérequis, ports, identifiants, arrêt complet).
 

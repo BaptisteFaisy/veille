@@ -1,0 +1,13 @@
+# commande : cd /data/w5 && ./bench_client hold --silence-ms 3000 --duration-ms 2000 --interval-us 200000 --bpm 72
+# hôte     : Linux 6.14.0-37-generic x86_64 GNU/Linux  2026-11-12T21:46:46+01:00
+# invité   : QNX qnxqemu 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+# ---- sortie ----
+Warning: Permanently added '[127.0.0.1]:8022' (ED25519) to the list of known hosts.
+# hold silence_ms=3000 duration_ms=2000 interval_us=200000 bpm=72
+VERDICT_SILENCE:
+WARN   VEILLE_TECHNICAL_ALARM  chain=/dev/veille  stage=acquire  state=sensor_dead|bus_ok|prio_normal|alarm_none  bound=50  latency=15
+OK
+VERDICT_SIGNAL:
+INFO   VEILLE_OK  chain=/dev/veille  stage=alarm  state=sensor_ok|bus_ok|prio_normal|alarm_none  bound=200
+OK
+# ---- code de sortie : 0 ----

@@ -1,0 +1,7 @@
+# commande : cd /data/w5 && ./tick_probe --period-ms 10 --duration-ms 20000
+# hôte     : Linux 6.14.0-37-generic x86_64 GNU/Linux  2026-11-12T21:46:15+01:00
+# invité   : QNX qnxqemu 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+# ---- sortie ----
+Warning: Permanently added '[127.0.0.1]:8022' (ED25519) to the list of known hosts.
+tick_probe pulses=1634 duree_us=20000441 taux_hz=81.70 min_us=5 max_us=548873 moyenne_us=12241 maxdev_us=538873 coalesced=37
+# ---- code de sortie : 0 ----
