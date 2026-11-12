@@ -21,7 +21,7 @@ EXTENSIONS = ["tables", "fenced_code", "toc", "sane_lists"]
 # Ordre de la navigation : source unique, les modules produisent dans l'ordre qu'ils veulent.
 ORDRE_NAV = [
     "index", "cahier", "contrat", "codelab", "code", "preuves", "ci",
-    "docs-qnx-evidence", "docs-qnx-build", "docs-real-data",
+    "docs-qnx-evidence", "docs-qnx-build", "docs-real-data", "docs-idees",
     "docs-safety", "docs-gap", "docs-decisions", "docs-validation",
     "docs-iec", "docs-socle-ci",
 ]
