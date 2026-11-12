@@ -63,7 +63,16 @@ static int setup_tick_timer(int coid) {
     return timer_settime(tid, 0, &it, NULL);
 }
 
-int main(void) {
+/* Source des échantillons : par défaut un capteur simulé interne cadencé par le
+ * timer noyau ; `--no-tick` coupe ce tick pour que la chaîne soit pilotée
+ * UNIQUEMENT par les clients (rejeu de données réelles dans /dev/veille). */
+static int tick_demande(int argc, char **argv) {
+    for (int i = 1; i < argc; i++)
+        if (strcmp(argv[i], "--no-tick") == 0) return 0;
+    return 1;
+}
+
+int main(int argc, char **argv) {
     veille_rm_init(&veille_dev);
     setup_priority();
 
@@ -77,6 +86,7 @@ int main(void) {
                      _RESMGR_IO_NFUNCS, &io_funcs);
     io_funcs.read = veille_io_read;
     io_funcs.write = veille_io_write;
+    connect_funcs.open = veille_open;   /* comptage des clients connectés */
 
     resmgr_attr_t rattr;
     memset(&rattr, 0, sizeof(rattr));
@@ -92,7 +102,8 @@ int main(void) {
                        pulse_disconnect, &veille_dev);
 
     int coid = message_connect(dpp, MSG_FLAG_SIDE_CHANNEL);
-    if (coid < 0 || setup_tick_timer(coid) != 0) return EXIT_FAILURE;
+    if (coid < 0) return EXIT_FAILURE;
+    if (tick_demande(argc, argv) && setup_tick_timer(coid) != 0) return EXIT_FAILURE;
 
     dispatch_context_t *ctp = dispatch_context_alloc(dpp);
     if (!ctp) return EXIT_FAILURE;
