@@ -20,11 +20,18 @@ RACINE = Path(__file__).resolve().parent.parent
 EXTENSIONS = ["tables", "fenced_code", "toc", "sane_lists"]
 # Ordre de la navigation : source unique, les modules produisent dans l'ordre qu'ils veulent.
 ORDRE_NAV = [
-    "index", "cahier", "contrat", "codelab", "code", "preuves", "ci",
+    "index", "cahier", "contrat", "codelab", "code", "preuves", "scene", "ci",
     "docs-qnx-evidence", "docs-qnx-build", "docs-real-data", "docs-idees",
     "docs-safety", "docs-gap", "docs-decisions", "docs-validation",
     "docs-iec", "docs-socle-ci",
+    "docs-limits", "docs-soumission", "docs-video", "docs-terrain", "docs-matrice",
 ]
+
+# Pages dont le document source peut ne pas encore exister (il est produit sur
+# d'autres branches) : le générateur les ignore alors sans casser le build.
+SLUGS_FACULTATIFS = {
+    "docs-limits", "docs-soumission", "docs-video", "docs-terrain", "docs-matrice",
+}
 
 GABARIT = """<!DOCTYPE html>
 <html lang="fr">
@@ -33,6 +40,7 @@ GABARIT = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{titre} — Veille</title>
 <link rel="stylesheet" href="style.css">
+{extra_head}
 </head>
 <body>
 <header class="top">
@@ -114,7 +122,9 @@ def construire_nav(pages, actif):
 
 def ecrire_page(page, nav_html, sortie):
     """Applique le gabarit unique et écrit <slug>.html ; vérifie que c'est non vide."""
-    html = GABARIT.format(titre=page["titre"], nav=nav_html, corps=page["corps_html"])
+    html = GABARIT.format(titre=page["titre"], nav=nav_html,
+                          corps=page["corps_html"],
+                          extra_head=page.get("extra_head", ""))
     cible = sortie / f"{page['slug']}.html"
     cible.write_text(html, encoding="utf-8")
     if not html.strip():
@@ -132,10 +142,13 @@ def main(argv):
     ctx = creer_ctx()
     import pages_generees
     import pages_md
-    pages = pages_md.construire(ctx) + pages_generees.construire(ctx)
+    import pages_scene
+    pages = pages_md.construire(ctx) + pages_generees.construire(ctx) \
+        + pages_scene.construire(ctx)
 
     slugs = [p["slug"] for p in pages]
-    manquants = [s for s in ORDRE_NAV if s not in slugs]
+    manquants = [s for s in ORDRE_NAV
+                 if s not in slugs and s not in SLUGS_FACULTATIFS]
     if manquants:
         raise SystemExit(f"pages manquantes : {manquants}")
 
@@ -145,9 +158,12 @@ def main(argv):
         taille = ecrire_page(page, nav_html, sortie)
         print(f"[site] {page['slug']}.html — {taille} octets")
 
-    shutil.copyfile(RACINE / "site" / "style.css", sortie / "style.css")
+    for asset in ("style.css", "scene.css", "scene.js", "data-reel.js"):
+        src = RACINE / "site" / asset
+        if src.is_file():
+            shutil.copyfile(src, sortie / asset)
     duree = time.time() - t0
-    print(f"[site] {len(pages)} pages + style.css → {sortie} en {duree:.1f} s")
+    print(f"[site] {len(pages)} pages + assets → {sortie} en {duree:.1f} s")
     return 0
 
 

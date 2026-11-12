@@ -2,6 +2,8 @@
 """Pages du site issues des markdown du dépôt (aucun texte recopié à la main)."""
 import re
 
+from pages_scene import encadre_rejeu
+
 # Liens internes des .md du dépôt → pages du site (évite les liens morts).
 LIENS = {
     "README.md": "index.html",
@@ -17,6 +19,11 @@ LIENS = {
     "docs/QNX-EVIDENCE.md": "docs-qnx-evidence.html",
     "docs/REAL-DATA.md": "docs-real-data.html",
     "docs/IDEES-CONSOLIDATION.md": "docs-idees.html",
+    "docs/LIMITS.md": "docs-limits.html",
+    "docs/SOUBMISSION.md": "docs-soumission.html",
+    "docs/VIDEO.md": "docs-video.html",
+    "docs/TERRAIN.md": "docs-terrain.html",
+    "docs/MATRICE.md": "docs-matrice.html",
     "LICENSE": "https://github.com/BaptisteFaisy/veille/blob/main/LICENSE",
 }
 
@@ -31,6 +38,11 @@ DOCS = [
     ("VALIDATION.md", "docs-validation", "Validation"),
     ("IEC60601-8.md", "docs-iec", "IEC 60601-8"),
     ("SOCLE-CI.md", "docs-socle-ci", "Socle CI"),
+    ("LIMITS.md", "docs-limits", "Limites"),
+    ("SOUBMISSION.md", "docs-soumission", "Soumission"),
+    ("VIDEO.md", "docs-video", "Vidéo"),
+    ("TERRAIN.md", "docs-terrain", "Terrain"),
+    ("MATRICE.md", "docs-matrice", "Matrice"),
 ]
 
 
@@ -98,6 +110,7 @@ def page_index(ctx):
         for v, legende in cartes) + "</div>"
     corps = "\n\n".join([
         pitch,
+        encadre_rejeu(),
         "## Chiffres clés\n\n<p class=\"desc\">Calculés depuis le dépôt à chaque "
         "génération du site.</p>\n" + html_cartes,
         "## Bornes IEC 60601-1-8 (contrat gelé v0.2)\n\n" + bornes_table(ctx),

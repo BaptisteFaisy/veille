@@ -1,0 +1,52 @@
+/* Veille — scène « Rejeu réel » (page scene.html).
+   Même charte que style.css (thème sombre, accent menthe) ;
+   aucune dépendance externe, aucun CDN. */
+.scene{max-width:60rem;margin:0 auto}
+.scene .intro{color:var(--mut);font-size:.95rem}
+.scene .intro strong{color:var(--fg)}
+
+/* Barre de contrôles */
+.scene-bar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0}
+.scene-bar button{background:var(--card);color:var(--fg);border:1px solid var(--bd);
+ border-radius:6px;padding:.4rem .85rem;font-size:.9rem;cursor:pointer}
+.scene-bar button:hover{border-color:var(--acc);color:var(--acc)}
+.scene-bar button.actif{background:var(--acc);color:#12141a;border-color:var(--acc);font-weight:600}
+.scene-bar label{color:var(--mut);font-size:.85rem;display:flex;align-items:center;gap:.4rem}
+.scene-bar select{background:var(--card);color:var(--fg);border:1px solid var(--bd);
+ border-radius:6px;padding:.3rem .5rem;font-size:.85rem}
+.scene-bar .horo{color:var(--acc);font-family:ui-monospace,Menlo,Consolas,monospace;
+ margin-left:auto;font-size:.9rem}
+
+/* Cadres des tracés */
+.trace{background:var(--card);border:1px solid var(--bd);border-radius:8px;
+ margin:1rem 0;padding:.6rem}
+.trace h3{margin:.1rem 0 .4rem;font-size:.9rem;color:var(--mut);font-weight:600}
+.trace canvas{display:block;width:100%;height:auto;background:#0d0f14;
+ border:1px solid var(--bd);border-radius:6px}
+
+/* Panneaux décision + latence */
+.scene-panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));
+ gap:.7rem;margin:1rem 0}
+.panel{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:.7rem .85rem}
+.panel h3{margin:.1rem 0 .4rem;font-size:.85rem;color:var(--mut);font-weight:600}
+.panel .valeur{font-size:1.15rem;font-weight:700}
+.panel .verdict{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;
+ margin-top:.3rem;color:var(--mut)}
+.panel.ok{border-left:3px solid var(--acc)}
+.panel.alarme{border-left:3px solid #e58fb0}
+.panel.tech{border-left:3px solid #f0c674}
+.panel .etat.ok{color:var(--acc)}
+.panel .etat.alarme{color:#e58fb0}
+.panel .etat.tech{color:#f0c674}
+
+/* Barre de latence (marge de sûreté) */
+.lat-bar{position:relative;height:1.2rem;background:#0d0f14;border:1px solid var(--bd);
+ border-radius:6px;margin:.5rem 0;overflow:hidden}
+.lat-fill{position:absolute;left:0;top:0;bottom:0;background:var(--acc);opacity:.9}
+
+/* Légende et source */
+.scene-legend{background:var(--card);border:1px solid var(--bd);border-radius:8px;
+ padding:.7rem .85rem;margin:1rem 0;font-size:.85rem}
+.scene-legend ul{margin:.3rem 0 0;padding-left:1.2rem}
+.scene-legend .src{color:var(--mut)}
+.scene-legend .src code{color:var(--acc)}
