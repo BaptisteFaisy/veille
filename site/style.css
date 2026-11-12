@@ -1,0 +1,66 @@
+/* Veille — style.css
+   Dérivé de qnx-dossier/tools/style.css (https://baptistefaisy.github.io/qnx-dossier/) :
+   même charte visuelle (thème sombre, accent menthe), adaptée au site Veille.
+   Aucune dépendance externe : pas de CDN, pas de webfont. */
+:root{--fg:#e6e6e6;--bg:#12141a;--card:#1b1f28;--acc:#7fd1c1;--mut:#9aa3b2;--bd:#2a3040}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header.top{padding:1.4rem 1.2rem;border-bottom:1px solid var(--bd);background:var(--card)}
+header.top h1{margin:0;font-size:1.25rem}
+header.top h1 small{display:block;font-size:.8rem;color:var(--mut);font-weight:400}
+header.top p{margin:.3rem 0 0;color:var(--mut);font-size:.9rem}
+nav{display:flex;flex-wrap:wrap;gap:.4rem;padding:.8rem 1.2rem;border-bottom:1px solid var(--bd)}
+nav a{color:var(--mut);text-decoration:none;font-size:.85rem;padding:.3rem .6rem;
+ border:1px solid var(--bd);border-radius:999px}
+nav a:hover{color:var(--fg)}
+nav a.actif{color:#12141a;background:var(--acc);border-color:var(--acc);font-weight:600}
+main{padding:1.2rem;max-width:60rem;margin:0 auto}
+main h1{font-size:1.6rem;border-bottom:1px solid var(--bd);padding-bottom:.4rem}
+main h2{font-size:1.25rem;margin-top:2rem;color:var(--acc)}
+main h3{font-size:1.05rem;margin-top:1.6rem}
+a{color:var(--acc)}
+code{background:#0d0f14;padding:.1rem .35rem;border-radius:4px;font-size:.88em;
+ font-family:ui-monospace,Menlo,Consolas,monospace}
+pre{background:#0d0f14;padding:.9rem;border-radius:8px;overflow-x:auto;border:1px solid var(--bd)}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.9rem;display:block;overflow-x:auto}
+th,td{border:1px solid var(--bd);padding:.45rem .6rem;text-align:left;vertical-align:top}
+th{background:var(--card);white-space:nowrap}
+blockquote{border-left:3px solid var(--acc);margin:1rem 0;padding:.2rem 1rem;color:var(--mut)}
+footer.pied{padding:1.2rem;color:var(--mut);font-size:.85rem;border-top:1px solid var(--bd);text-align:center}
+.desc{color:var(--mut);margin:.2rem 0 .6rem}
+.bandeau{background:var(--card);border:1px solid var(--bd);border-left:3px solid var(--acc);
+ border-radius:6px;padding:.55rem .8rem;color:var(--mut);font-size:.9rem;margin:1rem 0}
+
+/* Chiffres clés (accueil) : cartes */
+.cartes{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:.7rem;margin:1rem 0}
+.carte{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:.7rem .85rem}
+.carte b{display:block;font-size:1.35rem;color:var(--acc)}
+.carte span{color:var(--mut);font-size:.85rem}
+
+/* Sorties de commandes réelles (page Preuves) */
+.cmd{background:var(--card);border:1px solid var(--bd);border-radius:8px;margin:1rem 0;overflow:hidden}
+.cmd .entete{display:flex;gap:.55rem;align-items:center;flex-wrap:wrap;
+ padding:.5rem .85rem;border-bottom:1px solid var(--bd)}
+.cmd .entete b{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--acc)}
+.cmd pre{margin:0;border:0;border-radius:0;max-height:26rem;overflow:auto}
+.etat{font-size:.72rem;font-weight:700;border-radius:4px;padding:.1rem .45rem;color:#12141a;margin-left:auto}
+.etat.ok{background:#7fd1c1}
+.etat.echec{background:#e58fb0}
+.etat.attendu{background:#f0c674}
+
+/* Codes de verdict */
+.verdicts{display:flex;flex-wrap:wrap;gap:.4rem;margin:1rem 0;padding:0;list-style:none}
+.verdicts li{background:var(--card);border:1px solid var(--bd);border-radius:6px;
+ padding:.3rem .6rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem}
+.verdicts li i{color:var(--mut);font-style:normal}
+
+/* Arborescence (page Code) */
+.arbre td.num{text-align:right;white-space:nowrap;color:var(--mut)}
+.total td{font-weight:700;background:var(--card)}
+
+@media (max-width:40rem){
+ main{padding:.8rem}
+ .cartes{grid-template-columns:repeat(auto-fit,minmax(8rem,1fr))}
+}
