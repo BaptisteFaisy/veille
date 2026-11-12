@@ -124,7 +124,8 @@ def concatener_codelab(ctx):
     """Sommaire + les 4 chapitres du codelab, en UNE seule concaténation."""
     fichiers = ["README.md", "01-pourquoi-une-borne-prouvee.md",
                 "02-construire-la-chaine.md", "03-prouver-par-exploration.md",
-                "04-porter-sur-qnx.md"]
+                "04-porter-sur-qnx.md", "05-ecrire-un-resource-manager-qnx.md",
+                "06-proteger-sa-chaine-qnx.md"]
     textes = [ctx.lire("codelab", f) for f in fichiers]
     return adapter_liens("\n\n---\n\n".join(textes)), titre_de(textes[0], "Codelab")
 
