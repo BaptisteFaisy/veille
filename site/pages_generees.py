@@ -217,11 +217,11 @@ def workflows(ctx):
 def page_ci(ctx):
     lignes = ["| Workflow | Nom | Runs |", "|---|---|---|"]
     for nom_fichier, nom in workflows(ctx):
-        url = f"https://github.com/BaptisteFaisy/veille/actions/workflows/{nom_fichier}"
+        url = f"https://github.com/Tradoooo/veille/actions/workflows/{nom_fichier}"
         lignes.append(f"| `{nom_fichier}` | {nom} | [voir les runs]({url}) |")
     corps = "\n\n".join([
         "# CI & socle self-hosted",
-        "![Badge CI](https://github.com/BaptisteFaisy/veille/actions/workflows/ci.yml/badge.svg)",
+        "![Badge CI](https://github.com/Tradoooo/veille/actions/workflows/ci.yml/badge.svg)",
         "## Le socle (R630)",
         "- **3 workers self-hosted** `r630-veille-01..03` (label `veille-worker`, "
         "Debian 13, 80 cœurs) : gcc/python3/make déjà présents, aucun apt-get en CI.",
@@ -241,8 +241,8 @@ def page_ci(ctx):
         "## Workflows du dépôt (liste générée)",
         "\n".join(lignes),
         "## Liens stables",
-        "- Tous les runs : <https://github.com/BaptisteFaisy/veille/actions>",
-        "- File de merge / PR : <https://github.com/BaptisteFaisy/veille/pulls>",
+        "- Tous les runs : <https://github.com/Tradoooo/veille/actions>",
+        "- File de merge / PR : <https://github.com/Tradoooo/veille/pulls>",
     ])
     return {"slug": "ci", "nav": "CI & socle", "titre": "CI & socle", "corps": corps}
 

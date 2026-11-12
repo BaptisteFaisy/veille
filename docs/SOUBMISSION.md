@@ -98,8 +98,8 @@ démo C identique hôte/cible, exploration 4800 états sur cible, resource manag
 
 ## Liens
 
-- **Dépôt** : <https://github.com/BaptisteFaisy/veille> (dépôt renommé `Tradoooo/veille` ; l'ancienne adresse redirige)
-- **Site** : <https://baptistefaisy.github.io/veille/>
+- **Dépôt** : <https://github.com/Tradoooo/veille> (dépôt renommé depuis `BaptisteFaisy/veille` ; l'ancienne adresse redirige)
+- **Site** : <https://tradoooo.github.io/veille/>
 - **Vidéo** (2 min 40 s) : `preuve/video/veille.mp4` — régénérée par
   `bash preuve/video/montage.sh` (storyboard : [`docs/VIDEO.md`](VIDEO.md)).
   À héberger sur le Devpost (le fichier MP4 n'est pas commité, voir `.gitignore`).
