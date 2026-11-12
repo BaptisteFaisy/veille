@@ -1,0 +1,54 @@
+name: ci-qnx
+
+# Compilation croisée QNX 8.0 avec le VRAI qcc du SDP (installé sur le runner
+# self-hosted r630, label veille-worker). Le SDP n'est PAS dans le dépôt ni dans
+# une image : si le runner ne l'a pas, le job saute proprement au lieu d'échouer.
+#
+# Conformité « budget CI ≤ 5 min » : timeout-minutes: 5 par job, concurrency +
+# cancel-in-progress, fetch-depth: 1. Vérifiée par .github/ci-budget/check_timeouts.py.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-qnx-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-qnx:
+    runs-on: [self-hosted, Linux, X64, veille-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: SDP QNX 8.0 présent sur ce runner ?
+        id: sdp
+        run: |
+          if [ -f "${HOME}/qnx800/qnxsdp-env.sh" ] && [ -x "${HOME}/qnx800/host/linux/x86_64/usr/bin/qcc" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SDP QNX 8.0 absent de ${HOME}/qnx800 — build QNX sauté."
+          fi
+
+      - name: Compilation croisée QNX 8.0 (make qnx)
+        if: steps.sdp.outputs.present == 'true'
+        run: |
+          make qnx
+          echo "--- binaires produits ---"
+          file build/qnx/veille-sim build/qnx/veille-rm
+          echo "--- interpréteur dynamique (doit être ldqnx-64.so.2) ---"
+          readelf -l build/qnx/veille-rm | grep -q "ldqnx-64.so.2" \
+            || { echo "::error::veille-rm n'est pas un ELF QNX (interpréteur manquant)"; exit 1; }
+
+      - name: Binaires QNX (artefact)
+        if: steps.sdp.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: veille-qnx
+          path: |
+            build/qnx/veille-sim
+            build/qnx/veille-rm
