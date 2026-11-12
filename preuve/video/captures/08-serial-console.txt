@@ -1,0 +1,8 @@
+# commande : python3 /tmp/qnx-console.py 4444 6 'uname -a' 'pidin -F "%p %n" | grep [v]eille-rm'
+# hôte     : Linux 6.14.0-37-generic x86_64 GNU/Linux  2026-11-12T20:38:21+01:00
+# ---- sortie ----
+uname -a
+[?2004lQNX qnxqemu 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+[?2004h[root@qnxqemu ~]# pidin -F "%p %n" | grep [v]eille-rm
+[?2004l 62f ./[01;31m[Kveille-rm[m[K                                                                     
+[?2004h[root@qnxqemu ~]# 

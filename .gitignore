@@ -45,3 +45,8 @@ Thumbs.db
 
 # Données PhysioNet réelles (lourdes, régénérées par data/fetch.py)
 data/records/
+
+# Vidéo de soumission (artefacts volumineux, régénérés par preuve/video/*.sh)
+preuve/video/veille.mp4
+preuve/video/plans/
+preuve/video/voix-off.*

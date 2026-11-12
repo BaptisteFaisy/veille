@@ -1,0 +1,31 @@
+# commande : 
+sh /data/veille/rm-restart.sh --no-tick > /tmp/rm-restart.log 2>&1
+i=0
+while [ ! -e /dev/veille ] && [ $i -lt 20 ]; do sleep 1; i=$((i+1)); done
+echo "=== noeud /dev/veille (après $i s) ==="; ls -l /dev/veille
+echo
+sh /data/veille/rm-test.sh
+echo
+echo "--- journal serveur (/tmp/rm.log) ---"; tail -5 /tmp/rm.log
+echo "--- processus ---"; pidin -F "%p %n" | grep "[v]eille-rm"
+# hôte     : Linux 6.14.0-37-generic x86_64 GNU/Linux  2026-11-12T20:37:53+01:00
+# invité   : QNX qnxqemu 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+# ---- sortie ----
+=== noeud /dev/veille (après 0 s) ===
+nrw-rw-rw-  1 root root 0 2026-11-12 19:36 /dev/veille
+
+== 1) rythme normal (8 échantillons ~72 bpm) ==
+verdict : INFO   VEILLE_OK  chain=/dev/veille  stage=alarm  state=sensor_ok|bus_ok|prio_normal|alarm_none  bound=200
+== 2) tachycardie soutenue (8 échantillons à 132 bpm) ==
+verdict : INFO   VEILLE_OK  chain=/dev/veille  stage=alarm  state=sensor_ok|bus_ok|prio_normal|alarm_single  bound=200
+== 3) capteur figé (même valeur répétée) ==
+verdict : WARN   VEILLE_TECHNICAL_ALARM  chain=/dev/veille  stage=acquire  state=sensor_stuck|bus_ok|prio_normal|alarm_none  bound=50
+== 4) capteur mort (valeur négative) ==
+verdict : WARN   VEILLE_TECHNICAL_ALARM  chain=/dev/veille  stage=acquire  state=sensor_dead|bus_ok|prio_normal|alarm_none  bound=50
+== 5) retour à la normale ==
+verdict : INFO   VEILLE_OK  chain=/dev/veille  stage=alarm  state=sensor_ok|bus_ok|prio_normal|alarm_none  bound=200
+
+--- journal serveur (/tmp/rm.log) ---
+--- processus ---
+ 62f ./veille-rm                                                                     
+# ---- code de sortie : 0 ----

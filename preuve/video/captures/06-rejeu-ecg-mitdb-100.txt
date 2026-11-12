@@ -1,0 +1,10 @@
+# commande : cd /data/veille-py && time python3 -m veille.resmgr_client --record /data/veille-data/mitdb/100 --signal MLII --sortie /dev/veille
+# hôte     : Linux 6.14.0-37-generic x86_64 GNU/Linux  2026-11-12T20:38:17+01:00
+# invité   : QNX qnxqemu 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+# ---- sortie ----
+/data/veille-data/mitdb/100 : 2272 pic(s) R, 2271 ligne(s) « bpm » écrites vers /dev/veille — bpm min 61.0, moyen 75.7, max 89.6
+
+real	0m12.219s
+user	0m5.881s
+sys	0m0.000s
+# ---- code de sortie : 0 ----

@@ -1,5 +1,24 @@
 # Veille 🩺
 
+## En 30 secondes
+
+**Veille** est un **moniteur patient QNX 8.0** où la latence d'alarme
+(*capteur → alarme*) est **bornée et prouvée** par exploration exhaustive de
+**4800 états de défaillance** — au lieu d'être mesurée sur quelques scénarios
+chanceux. La chaîne tourne sur un **QNX 8.0 réel** (QEMU/KVM), avec un jumeau
+Python de vérification et un resource manager `/dev/veille`.
+
+| Chiffre | Valeur |
+|---|---|
+| **4800** | états de défaillance explorés (sur cible, en 0,13 s) |
+| **291 + 8** | alarmes physiologiques + techniques, `L_measured ≤ B_proof` |
+| **2401** | battements réels (MIT-BIH) écrits dans `/dev/veille` sur la cible |
+| **5** | défauts trouvés en passant sur la vraie cible, tous corrigés |
+
+- **Vidéo** (2 min 40 s) : `preuve/video/veille.mp4` — [storyboard](docs/VIDEO.md)
+- **Dossier de soumission** : [docs/SOUBMISSION.md](docs/SOUBMISSION.md)
+- **Preuve** : [docs/QNX-EVIDENCE.md](docs/QNX-EVIDENCE.md) · [limites assumées](docs/LIMITS.md)
+
 > *Un moniteur patient QNX 8.0 où la chaîne capteur→alarme a une latence **bornée et prouvée** par exploration exhaustive de tous les états de défaillance — au lieu d'être mesurée sur quelques scénarios chanceux.*
 
 **Veille** est un framework de **garantie et de preuve de latence d'alarme médicale** sur QNX 8.0. Il traite la chaîne `acquisition (ECG/SpO2/PA) → filtrage → décision → alarme audible` comme un chemin critique à deadline, et **prouve** que la borne tient dans chaque état atteignable du système (capteur bloqué/mort/bruité, bus saturé, inversion de priorité, alarmes concurrentes, panne d'étage).
@@ -42,6 +61,9 @@ Une alarme médicale passe d'« elle a sonné en test » à « **sa latence est 
 | Données réelles (PhysioNet) | ✅ MIT-BIH (ECG + arythmies), BIDMC (ECG + PLETH/SpO2), slpdb (pression artérielle) — accès libre, ODC-By v1.0, [provenance](docs/REAL-DATA.md) |
 | Rejeu de données réelles dans la chaîne | ✅ ECG de patients réels rejoués **dans l'émulateur QNX** ; 2401 bpm réels écrits dans `/dev/veille` |
 | Codelab (4 chapitres + sommaire) | ✅ `codelab/` — bonus Best Codelab/Tutorial |
+| Dossier de soumission (pitch, chiffres, questions jury) | ✅ [`docs/SOUBMISSION.md`](docs/SOUBMISSION.md) |
+| Vidéo (storyboard + captures réelles + montage) | ✅ [`docs/VIDEO.md`](docs/VIDEO.md) — 8 captures sur cible, montage reproductible |
+| Limites de la preuve assumées | ✅ [`docs/LIMITS.md`](docs/LIMITS.md) — E2/E3/E4, émulateur, statut non clinique |
 | Docs sûreté | ✅ `SAFETY.md`, `GAP.md`, `DECISIONS.md`, `VALIDATION.md` |
 
 ## Build et test
