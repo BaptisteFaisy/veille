@@ -16,7 +16,7 @@ jobs:
   build-test:
     # Runners self-hosted R630 (label veille-worker) : gcc/python3/make déjà présents,
     # pas d'apt-get. Conformité ci-budget vérifiée par .github/ci-budget/check_timeouts.py.
-    runs-on: [self-hosted, Linux, X64, veille-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
