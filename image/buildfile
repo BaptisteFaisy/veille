@@ -108,6 +108,7 @@ toybox = usr/bin/toybox
 [type=link] /proc/boot/tee=/proc/boot/toybox
 [type=link] /proc/boot/tail=/proc/boot/toybox
 [type=link] /proc/boot/grep=/proc/boot/toybox
+[type=link] /proc/boot/cut=/proc/boot/toybox
 
 # Binaires Veille (compilés par build-image.sh, présents dans le répertoire de
 # sortie) + le scénario de démonstration.
