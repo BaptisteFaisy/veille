@@ -42,9 +42,13 @@ target/rm/rm_io.c target/pipe/veille_pipe.c target/port/qnx_time.c $CORE"
 SOURCES="$SOURCES;bench-client:tools/qnx/bench_client.c"
 
 mkdir -p "$WORK"
-# Le scénario de démarrage doit être présent dans le répertoire de sortie :
-# le buildfile le référence en « ./demo.sh ».
+# Les fichiers reference par le buildfile en « ./nom » doivent etre presents
+# dans le repertoire de sortie (c'est la que mkifs travaille) : le scenario de
+# demarrage, et le profil du shell interactif (c'est lui qui lance le scenario
+# — une seule session de console, donc l'invite interactive repond a la fin).
 cp "$SRC/image/demo.sh" "$WORK/demo.sh"
+cp "$SRC/image/profile" "$WORK/profile"
+cp "$SRC/image/etc-profile" "$WORK/etc-profile"
 
 cd "$SRC"
 "$EMU/build-image.sh" \

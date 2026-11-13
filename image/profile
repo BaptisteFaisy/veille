@@ -1,0 +1,10 @@
+# .profile — lu par le shell interactif (ksh -l) de la console VGA.
+#
+# UNE SEULE session de console pour /dev/con1 : le shell interactif lance le
+# scenario ici, puis rend la main. C'est indispensable : si le scenario est
+# lance par une DEUXIEME session `on` sur le meme peripherique, elle prend la
+# console a la premiere ; quand elle se termine, l'invite interactive ne
+# repond plus (les touches injectees depuis la page n'ont aucun effet).
+#
+# Le script rend la console au prompt : la session, elle, ne se termine pas.
+sh /proc/boot/demo.sh
