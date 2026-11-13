@@ -79,7 +79,7 @@ pick() {
 # l'image n'a ni `printf` ni `clear`, et on ne depend pas de l'interpretation
 # des anti-slashes par `echo`.
 phase() {
-    echo "[2J[H"
+    echo "[3J[2J[H"
     say "================================================================"
     say "  $1"
     say "================================================================"
@@ -176,3 +176,7 @@ say "    (les commandes tapes ici vont a l'invite QNX 8.0)"
 # Le journal du scenario part sur la console serie : la vitrine web l'affiche
 # en texte (la console VGA, elle, garde la derniere image).
 cat "$LOG" > /dev/ser1
+
+# Le scenario est termine : la session de console (le shell interactif qui
+# nous a lance via son .profile) rend la main : l'invite attend les touches
+# injectees depuis la vitrine.

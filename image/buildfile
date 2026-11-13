@@ -45,11 +45,12 @@
     display_msg "Veille - invite QNX 8.0 (chaine capteur->alarme)"
     # Deux consoles : série (texte, capture) et VGA (capture d'écran pour la
     # vitrine web). La démo tourne sur le VGA : c'est lui que la vitrine
-    # capture. Le shell de démarrage ne gère pas $! → la démo passe par
-    # `on -d -t … ksh -c` (ksh, lui, rend $! fiable).
+    # capture. UNE SEULE session par console : sur /dev/con1, c'est le
+    # scenario PUIS l'invite interactive (demo.sh fait `exec ksh -l` a la fin).
+    # Deux sessions `on` sur le meme peripherique se disputent la console :
+    # a la fin du scenario, l'invite interactive ne repondait plus.
+    on -d -t /dev/ser1 -e HOME=/proc/boot ksh
     on -d -t /dev/con1 -e HOME=/proc/boot ksh -l
-    on -d -t /dev/ser1 -e HOME=/proc/boot ksh -l
-    on -d -t /dev/con1 -e HOME=/proc/boot ksh -c /proc/boot/demo.sh
 }
 
 # ------------------------------------------------------------------- fichiers
@@ -82,8 +83,8 @@ libcam.so.2 = lib/libcam.so.2
 libz.so.2 = usr/lib/libz.so.2
 libfsnotify.so.1 = lib/libfsnotify.so.1
 libsocket.so.4 = lib/libsocket.so.4
-libcrypto.so.3 = lib/libcrypto.so.3
-libexpat.so.2 = lib/libexpat.so.2
+libcrypto.so.3 = usr/lib/libcrypto.so.3
+libexpat.so.2 = usr/lib/libexpat.so.2
 libregex.so.1 = lib/libregex.so.1
 libjson.so.1 = lib/libjson.so.1
 
@@ -108,6 +109,7 @@ toybox = usr/bin/toybox
 [type=link] /proc/boot/tee=/proc/boot/toybox
 [type=link] /proc/boot/tail=/proc/boot/toybox
 [type=link] /proc/boot/grep=/proc/boot/toybox
+[type=link] /proc/boot/uname=/proc/boot/toybox
 [type=link] /proc/boot/cut=/proc/boot/toybox
 
 # Binaires Veille (compilés par build-image.sh, présents dans le répertoire de
@@ -116,3 +118,6 @@ veille-sim = ./veille-sim
 veille-rm = ./veille-rm
 bench-client = ./bench-client
 demo.sh = ./demo.sh
+# ------------------------------------------------------------------ profil
+/etc/profile = ./etc-profile
+.profile = ./profile
