@@ -44,7 +44,7 @@ static void set_prio(int p) {
     memset(&sp, 0, sizeof(sp));
     sp.sched_priority = p;
     if (sched_setscheduler(0, SCHED_FIFO, &sp) != 0)
-        fprintf(stderr, "[client] WARNING: priorité %d non appliquée\n", p);
+        fprintf(stderr, "[client] WARNING: priorite %d non appliquee\n", p);
 }
 
 /* Affiche le canal de mesures du rm (texte « cle=valeur », offset réservé). */
@@ -57,7 +57,7 @@ static int print_stats(int fd) {
     }
     int n = read(fd, buf, sizeof(buf) - 1);
     if (n <= 0) {
-        fprintf(stderr, "[client] read stats : échec (%d)\n", n);
+        fprintf(stderr, "[client] read stats : echec (%d)\n", n);
         return -1;
     }
     buf[n] = '\0';

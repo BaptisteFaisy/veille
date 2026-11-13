@@ -1,0 +1,117 @@
+# image/buildfile — image invitée QNX 8.0 (x86_64) pour la démo Veille.
+#
+# Construite avec le SDP 8.0 : la chaîne qcc → mkifs est orchestrée par
+# build-image.sh (qui appelle le paquet réutilisable ~/Bureau/qnx-emu).
+#   export QNX_HOST=$SDP/host/linux/x86_64
+#   export QNX_TARGET=$SDP/target/qnx
+#   sh image/build-image.sh
+#
+# Démarrage sous QEMU (voir IMAGE/README.md et ~/Bureau/qnx-emu/README.md) :
+#   -kernel ifs.bin, --cpu max, --device virtio-rng-pci, -vga std, -serial file.
+# L'IFS se lance par -kernel, PAS par le disque (le disque ne boote pas).
+
+[search=.:$QNX_TARGET/x86_64:$QNX_TARGET/x86_64/boot/sys:]
+
+[+dupignore]
+[+optional]
+
+[uid=0 gid=0 dperms=0555 perms=0555]
+
+[image=20m]
+[virtual=x86_64,multiboot ] boot = {
+    startup-x86 -D8250..115200 -zz -f 0,0,1000M
+    PATH=/proc/boot:/system/bin
+    LD_LIBRARY_PATH=/proc/boot:/system/lib:/system/lib/dll
+    [+keeplinked uid=0 gid=0 perms=0700 ] CONFIG_PATH=/proc/boot:/system/etc procnto-smp-instr -mr -d 022 -u 066 -F 2000
+}
+
+# ------------------------------------------------------------------ démarrage
+[+script] startup-script = {
+    procmgr_symlink /proc/boot/ksh /bin/sh
+    procmgr_symlink /proc/boot/ksh /bin/ksh
+    procmgr_symlink /var/tmp /tmp
+    procmgr_symlink /proc/boot/ldqnx-64.so.2 /usr/lib/ldqnx-64.so.2
+    procmgr_symlink /proc/boot/slog2info /bin/slog2
+    procmgr_symlink /proc/boot/pidin /bin/pidin
+    procmgr_symlink /proc/boot/tracelogger /bin/tracelogger
+    procmgr_symlink /proc/boot/dumper /bin/dumper
+    PATH=/proc/boot:/system/bin
+    LD_LIBRARY_PATH=/proc/boot:/system/lib:/system/lib/dll
+    HOME=/proc/boot
+    TERM=qansi
+    devc-con
+    devc-ser8250 -e
+    waitfor /dev/ser1
+    display_msg "Veille - invite QNX 8.0 (chaine capteur->alarme)"
+    # Deux consoles : série (texte, capture) et VGA (capture d'écran pour la
+    # vitrine web). La démo tourne sur le VGA : c'est lui que la vitrine
+    # capture. Le shell de démarrage ne gère pas $! → la démo passe par
+    # `on -d -t … ksh -c` (ksh, lui, rend $! fiable).
+    on -d -t /dev/con1 -e HOME=/proc/boot ksh -l
+    on -d -t /dev/ser1 -e HOME=/proc/boot ksh -l
+    on -d -t /dev/con1 -e HOME=/proc/boot ksh -c /proc/boot/demo.sh
+}
+
+# ------------------------------------------------------------------- fichiers
+multiboot.boot = boot/sys/multiboot.boot
+procnto-smp-instr = boot/sys/procnto-smp-instr
+startup-x86 = boot/sys/startup-x86
+
+devc-con = sbin/devc-con
+devc-ser8250 = sbin/devc-ser8250
+on = bin/on
+sh = bin/sh
+ksh = bin/ksh
+pidin = bin/pidin
+slay = bin/slay
+slog2info = bin/slog2info
+slogger2 = bin/slogger2
+mount = bin/mount
+tracelogger = usr/sbin/tracelogger
+dumper = usr/sbin/dumper
+
+ldqnx-64.so.2 = usr/lib/ldqnx-64.so.2
+libc.so.6 = lib/libc.so.6
+libgcc_s.so.1 = lib/libgcc_s.so.1
+libm.so.3 = lib/libm.so.3
+libtracelog.so.1 = lib/libtracelog.so.1
+libslog2.so.1 = lib/libslog2.so.1
+libslog2parse.so.1 = lib/libslog2parse.so.1
+libsecpol.so.1 = lib/libsecpol.so.1
+libcam.so.2 = lib/libcam.so.2
+libz.so.2 = usr/lib/libz.so.2
+libfsnotify.so.1 = lib/libfsnotify.so.1
+libsocket.so.4 = lib/libsocket.so.4
+libcrypto.so.3 = lib/libcrypto.so.3
+libexpat.so.2 = lib/libexpat.so.2
+libregex.so.1 = lib/libregex.so.1
+libjson.so.1 = lib/libjson.so.1
+
+cam-disk.so = lib/dll/cam-disk.so
+fs-qnx6.so = lib/dll/fs-qnx6.so
+io-blk.so = lib/dll/io-blk.so
+
+toybox = usr/bin/toybox
+[type=link] /proc/boot/echo=/proc/boot/toybox
+[type=link] /proc/boot/cat=/proc/boot/toybox
+[type=link] /proc/boot/sleep=/proc/boot/toybox
+[type=link] /proc/boot/mkdir=/proc/boot/toybox
+[type=link] /proc/boot/ls=/proc/boot/toybox
+[type=link] /proc/boot/head=/proc/boot/toybox
+[type=link] /proc/boot/kill=/proc/boot/toybox
+[type=link] /proc/boot/base64=/proc/boot/toybox
+[type=link] /proc/boot/xxd=/proc/boot/toybox
+[type=link] /proc/boot/md5sum=/proc/boot/toybox
+[type=link] /proc/boot/wc=/proc/boot/toybox
+# Applets utilisées par image/demo.sh (journal du scénario, copie ASCII).
+[type=link] /proc/boot/sed=/proc/boot/toybox
+[type=link] /proc/boot/tee=/proc/boot/toybox
+[type=link] /proc/boot/tail=/proc/boot/toybox
+[type=link] /proc/boot/grep=/proc/boot/toybox
+
+# Binaires Veille (compilés par build-image.sh, présents dans le répertoire de
+# sortie) + le scénario de démonstration.
+veille-sim = ./veille-sim
+veille-rm = ./veille-rm
+bench-client = ./bench-client
+demo.sh = ./demo.sh
