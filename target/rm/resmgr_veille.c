@@ -63,7 +63,7 @@ static void setup_priority(int prio) {
     memset(&sp, 0, sizeof(sp));
     sp.sched_priority = prio;
     if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp) != 0)
-        fprintf(stderr, "[veille-rm] WARNING: priorité %d non appliquée\n", prio);
+        fprintf(stderr, "[veille-rm] WARNING: priorite %d non appliquee\n", prio);
 }
 
 /* Cadence noyau : timer_create(CLOCK_MONOTONIC) + SIGEV_PULSE sur le coid du
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
         setup_timer(coid, VEILLE_WD_PERIOD_MS, VEILLE_PULSE_WATCHDOG,
                     opts.prio) != 0) return EXIT_FAILURE;
 
-    fprintf(stderr, "[veille-rm] prêt : prio=%d tick=%d watchdog_ms=%d no_inherit=%d\n",
+    fprintf(stderr, "[veille-rm] pret : prio=%d tick=%d watchdog_ms=%d no_inherit=%d\n",
             opts.prio, opts.tick, opts.watchdog_ms, opts.no_inherit);
 
     dispatch_context_t *ctp = dispatch_context_alloc(dpp);

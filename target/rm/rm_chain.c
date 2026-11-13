@@ -89,7 +89,7 @@ void veille_rm_init(veille_dev_t *dev) {
     dev->tick_last_us = dev->start_us;   /* 1er intervalle mesuré depuis le boot */
     dev->wd_last_us = dev->start_us;
     veille_verdict v;
-    fill_verdict(&v, VEILLE_OK, "chaîne prête — aucun échantillon",
+    fill_verdict(&v, VEILLE_OK, "chaine prete - aucun echantillon",
                  VEILLE_SENSOR_OK, VEILLE_ALARM_NONE, dev->cfg.bound_alarm_ms, 0);
     format_verdicts(dev, &v, 1);
 }
@@ -157,18 +157,18 @@ static void push_sample(veille_dev_t *dev, long raw_bpm, int from_tick) {
     if (r == VEILLE_PIPE_ALARM) {                    /* seuil franchi → alarme haute */
         fill_verdict(&v[n++], dt_ms <= c->bound_alarm_ms ? VEILLE_OK
                                                          : VEILLE_LATENCY_BOUND_EXCEEDED,
-                     "alarme haute priorité — seuil franchi",
+                     "alarme haute priorite - seuil franchi",
                      VEILLE_SENSOR_OK, VEILLE_ALARM_SINGLE, c->bound_alarm_ms, dt_ms);
     } else if (r == VEILLE_PIPE_TECH_STUCK || r == VEILLE_PIPE_TECH_DEAD) {
         fill_verdict(&v[n++], VEILLE_TECHNICAL_ALARM,
-                     r == VEILLE_PIPE_TECH_DEAD ? "capteur mort" : "capteur figé",
+                     r == VEILLE_PIPE_TECH_DEAD ? "capteur mort" : "capteur fige",
                      r == VEILLE_PIPE_TECH_DEAD ? VEILLE_SENSOR_DEAD : VEILLE_SENSOR_STUCK,
                      VEILLE_ALARM_NONE, c->bound_tech_ms, dt_ms);
         if (dt_ms > c->bound_tech_ms)                /* borne technique dépassée */
-            fill_verdict(&v[n++], VEILLE_LATENCY_BOUND_EXCEEDED, "B_tech dépassée",
+            fill_verdict(&v[n++], VEILLE_LATENCY_BOUND_EXCEEDED, "B_tech depassee",
                          VEILLE_SENSOR_OK, VEILLE_ALARM_NONE, c->bound_tech_ms, dt_ms);
     } else {
-        fill_verdict(&v[n++], VEILLE_OK, "échantillon traité — seuil non franchi",
+        fill_verdict(&v[n++], VEILLE_OK, "echantillon traite - seuil non franchi",
                      VEILLE_SENSOR_OK, VEILLE_ALARM_NONE, c->bound_alarm_ms, dt_ms);
     }
     format_verdicts(dev, v, n);
@@ -194,12 +194,12 @@ void veille_rm_peer_lost(veille_dev_t *dev) {
     dev->n_disconnects++;
     if (dev->n_clients <= 0) {
         /* Notification sans client connecté : on l'ignore (rien à signaler). */
-        fprintf(stderr, "[veille-rm] notification de disconnect sans client (ignorée)\n");
+        fprintf(stderr, "[veille-rm] notification de disconnect sans client (ignoree)\n");
         return;
     }
     dev->n_clients--;
-    fprintf(stderr, "[veille-rm] mort d'un pair détectée (clients=%d)\n", dev->n_clients);
-    veille_rm_set_tech(dev, VEILLE_TECH_DISCONNECT, "mort d'un pair — CHANNEL disconnect",
+    fprintf(stderr, "[veille-rm] mort d'un pair detectee (clients=%d)\n", dev->n_clients);
+    veille_rm_set_tech(dev, VEILLE_TECH_DISCONNECT, "mort d'un pair - CHANNEL disconnect",
                        VEILLE_SENSOR_OK, dev->cfg.bound_tech_ms, 0);
     format_verdicts(dev, NULL, 0);   /* réaffiche le rapport avec l'alarme */
 }
@@ -221,7 +221,7 @@ void veille_rm_watchdog(veille_dev_t *dev) {
     dev->wd_count++;
     char msg[96];
     snprintf(msg, sizeof(msg),
-             "capteur muet — aucun échantillon depuis %ld ms (seuil %d ms)",
+             "capteur muet - aucun echantillon depuis %ld ms (seuil %d ms)",
              silence_ms, dev->wd_ms);
     veille_rm_set_tech(dev, VEILLE_TECH_SILENCE, msg, VEILLE_SENSOR_DEAD,
                        dev->cfg.bound_tech_ms, (long)dev->cfg.tech_detect_ms);
